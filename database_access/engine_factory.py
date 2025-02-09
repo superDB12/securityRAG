@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import pg8000
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine
+import logging
 
 class EngineFactory:
     engine = None
@@ -13,7 +14,7 @@ class EngineFactory:
         try:
             load_dotenv()
         except Exception as ex:
-            print(f'Sorry failed to load .env file: {ex}')
+            logging.info(f'Sorry failed to load .env file: {ex}')
             raise ex
 
         # instance_connection_name = 'securitynowrag:us-west1:securitynowrag'
@@ -44,7 +45,7 @@ class EngineFactory:
 
         #     logging.info('Connect fn connected')
         except Exception as ex:
-            print(f'Sorry failed to connect: {ex}')
+            logging.info(f'Sorry failed to connect: {ex}')
             raise ex
 
         return engine

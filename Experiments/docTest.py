@@ -39,7 +39,7 @@ def build_engine():
 
     #     logging.info('Connect fn connected')
     except Exception as ex:
-        print(f'Sorry failed to connect: {ex}')
+        logging.info(f'Sorry failed to connect: {ex}')
         raise ex
 
     #DATABASE_URL = (f'postgresql+pg8000://{os.getenv("USERNAME")}:{os.getenv("PASSWORD")}@[
@@ -53,15 +53,15 @@ if __name__ == "__main__":
     crud = DocumentCRUD(db_connection)
 
     # Add a document
-    print("Adding a document...")
+    logging.info("Adding a document...")
     crud.add_document("Sample MetaData", "2023-10-01 10:00:00", "2023-10-01 10:00:00", "Sample Content")
 
     # Update the document
-    print("Updating the document...")
+    logging.info("Updating the document...")
     crud.update_document(1, metadata="Updated MetaData")
 
     # Delete the document
-    # print("Deleting the document...")
+    # logging.info("Deleting the document...")
     # crud.delete_document(1)
 
-    print("Operations completed.")
+    logging.info("Operations completed.")

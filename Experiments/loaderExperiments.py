@@ -1,7 +1,7 @@
 import os
 assert os.environ.get("OPENAI_API_KEY")!=None, "You need an OpenAI API Key"
 assert os.environ.get("LANGCHAIN_API_KEY")!=None, "You need to set LANGCHAIN_API_KEY"
-
+import logging
 from langchain_openai import OpenAIEmbeddings
 from langchain_core.vectorstores import InMemoryVectorStore
 
@@ -11,7 +11,7 @@ vector_store = InMemoryVectorStore(embeddings)
 
 # Load the documents
 def load_docs():
-    print("Loading docs...")
+    logging.info("Loading docs...")
     from langchain_community.document_loaders import RecursiveUrlLoader
     anchor_rgx = r'<a\s+(?:[^>]*?\s+)?href="([^"]*(?=txt)[^"]*)"'
     file_path = "https://www.grc.com/securitynow.htm"
@@ -24,20 +24,20 @@ def load_docs():
     for doc in loader.lazy_load():
 
         if doc.metadata['source'].endswith('.txt'):
-            print(doc.metadata['source'])
-            print(doc.page_content[:300])
-            print("-------------------")
+            logging.info(doc.metadata['source'])
+            logging.info(doc.page_content[:300])
+            logging.info("-------------------")
             pages.append(doc)
 
         if len(pages) >= 10:
             # do some paged operation, e.g.
             # index.upsert(page)
-            print("We Loaded 10 Docs")
+            logging.info("We Loaded 10 Docs")
             break
             #pages = []
 
-    print(len(pages))
-    print("Done loading docs \n")
+    logging.info(len(pages))
+    logging.info("Done loading docs \n")
 
     return pages
 
@@ -54,8 +54,8 @@ if __name__ == "__main__":
     # Search for a query
     results = vector_store.similarity_search_with_score("What was the main topic of Security Now's latest episode?")
     doc, score = results[0]
-    print(f"Score: {score}\n")
-    print(doc.metadata['source'])
-    print(doc.page_content[:300])
+    logging.info(f"Score: {score}\n")
+    logging.info(doc.metadata['source'])
+    logging.info(doc.page_content[:300])
 
 

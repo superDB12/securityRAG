@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from langchain_community.document_loaders import RecursiveUrlLoader
+import logging
 
 # Load the documents
 class GRCRetriever:
@@ -8,7 +9,7 @@ class GRCRetriever:
         self.doc_crud = doc_crud
 
     def load_docs(self):
-        print("Loading docs...")
+        logging.info("Loading docs...")
         anchor_rgx = r'<a\s+(?:[^>]*?\s+)?href="([^"]*(?=txt)[^"]*)"'
         file_path = "https://www.grc.com/securitynow.htm"
         loader = RecursiveUrlLoader(file_path,
@@ -19,10 +20,10 @@ class GRCRetriever:
         for doc in loader.lazy_load():
 
             if doc.metadata['source'].endswith('.txt'):
-                # print(doc.metadata['source'])
-                # print(doc.page_content[:300])
-                # print("-------------------")
+                # logging.info(doc.metadata['source'])
+                # logging.info(doc.page_content[:300])
+                # logging.info("-------------------")
                 (self.doc_crud.add_document(doc.metadata['source'], datetime.now(), None,
                  doc.page_content))
 
-        print("Done loading docs \n")
+        logging.info("Done loading docs \n")

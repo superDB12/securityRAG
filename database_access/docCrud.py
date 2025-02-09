@@ -2,6 +2,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+import logging
 
 Base = declarative_base()
 
@@ -30,12 +31,12 @@ class DocumentCRUD:
     def add_document(self, metadata, date_read, doc_date, doc_content):
         doc = self.session.query(Document).filter(Document.MetaData==metadata).first()
         if not doc:
-            print("Adding a document...")
+            logging.info("Adding a document...")
             new_doc = Document(MetaData=metadata, DateRead=date_read, DocDate=doc_date, DocContent=doc_content)
             self.session.add(new_doc)
             self.session.commit()
         else:
-            print("Document already exists")
+            logging.info("Document already exists")
 
     def update_document(self, doc_id, metadata=None, date_read=None, doc_date=None, doc_content=None):
         doc = self.session.query(Document).filter(Document.DocID == doc_id).first()

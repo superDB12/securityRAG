@@ -1,7 +1,4 @@
 import os
-
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
 assert os.environ.get("OPENAI_API_KEY")!=None, "You need an OpenAI API Key"
 assert os.environ.get("LANGCHAIN_API_KEY")!=None, "You need to set LANGCHAIN_API_KEY"
 

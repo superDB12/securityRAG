@@ -8,7 +8,7 @@ class GRCRetriever:
     def __init__(self, doc_crud):
         self.doc_crud = doc_crud
 
-    def load_docs(self):
+    def load_current_year(self):
         logging.info("Loading docs...")
         anchor_rgx = r'<a\s+(?:[^>]*?\s+)?href="([^"]*(?=txt)[^"]*)"'
         file_path = "https://www.grc.com/securitynow.htm"
@@ -27,3 +27,7 @@ class GRCRetriever:
                  doc.page_content))
 
         logging.info("Done loading docs \n")
+
+    #TODO
+    #Function to get list of year urls from the main page
+    #Function to load all docs for a given single year by passing url as parameter

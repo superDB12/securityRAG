@@ -28,10 +28,14 @@ class DocumentCRUD:
         Base.metadata.create_all(db_connection.engine)
 
     def add_document(self, metadata, date_read, doc_date, doc_content):
-        new_doc = Document(MetaData=metadata, DateRead=date_read, DocDate=doc_date, DocContent=doc_content)
-
-        self.session.add(new_doc)
-        self.session.commit()
+        doc = self.session.query(Document).filter(Document.MetaData==metadata).first()
+        if not doc:
+            print("Adding a document...")
+            new_doc = Document(MetaData=metadata, DateRead=date_read, DocDate=doc_date, DocContent=doc_content)
+            self.session.add(new_doc)
+            self.session.commit()
+        else:
+            print("Document already exists")
 
     def update_document(self, doc_id, metadata=None, date_read=None, doc_date=None, doc_content=None):
         doc = self.session.query(Document).filter(Document.DocID == doc_id).first()

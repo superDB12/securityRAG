@@ -1,9 +1,6 @@
 import os
 from datetime import datetime
-
 from langchain_community.document_loaders import RecursiveUrlLoader
-#assert os.environ.get("LANGCHAIN_API_KEY")!=None, "You need to set LANGCHAIN_API_KEY"
-
 
 # Load the documents
 class GRCRetriever:
@@ -22,9 +19,9 @@ class GRCRetriever:
         for doc in loader.lazy_load():
 
             if doc.metadata['source'].endswith('.txt'):
-                print(doc.metadata['source'])
-                print(doc.page_content[:300])
-                print("-------------------")
+                # print(doc.metadata['source'])
+                # print(doc.page_content[:300])
+                # print("-------------------")
                 (self.doc_crud.add_document(doc.metadata['source'], datetime.now(), None,
                  doc.page_content))
 

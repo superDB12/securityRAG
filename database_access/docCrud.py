@@ -1,4 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from datetime import datetime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, \
+    UniqueConstraint, Boolean, ARRAY, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -22,6 +24,21 @@ class Document(Base):
     DateRead = Column(DateTime)
     DocDate = Column(DateTime)
     DocContent = Column(String)
+    Processed = Column(Boolean, default=False)
+
+#Add a new table for split documents here or in a new file?
+class SplitDocument(Base):
+    __tablename__ = 'split_documents'
+    SplitID = Column(Integer, primary_key=True, autoincrement=True)
+    DocID = Column(Integer, ForeignKey('documents.DocID'))
+    MetaData = Column(String)
+    DateRead = Column(DateTime)
+    DocDate = Column(DateTime)
+    SplitContent = Column(String)
+    VectorStored = Column(Boolean, default=False)
+    #Add vector representation of the split content here or do we want a separate table for that?
+    #SplitVector = Column(ARRAY(Float))
+    __table_args__ = (UniqueConstraint('DocID', 'SplitContent', name='_docid_splitcontent_uc'),)
 
 class DocumentCRUD:
     def __init__(self, db_connection):
@@ -38,7 +55,8 @@ class DocumentCRUD:
         else:
             logging.info("Document already exists")
 
-    def update_document(self, doc_id, metadata=None, date_read=None, doc_date=None, doc_content=None):
+    def update_document(self, doc_id, metadata=None, date_read=None, doc_date=None,
+                        doc_content=None, processed=None):
         doc = self.session.query(Document).filter(Document.DocID == doc_id).first()
         if doc:
             if metadata:
@@ -49,6 +67,8 @@ class DocumentCRUD:
                 doc.DocDate = doc_date
             if doc_content:
                 doc.DocContent = doc_content
+            if processed:
+                doc.Processed = processed
             self.session.commit()
 
     def delete_document(self, doc_id):
@@ -57,16 +77,23 @@ class DocumentCRUD:
             self.session.delete(doc)
             self.session.commit()
 
-# Replace with your PostgreSQL connection details
-DATABASE_URL = "postgresql+psycopg2://<username>:<password>@<host>:<port>/<database>"
+    def get_all_documents(self):
+        return self.session.query(Document).all()
 
-# Example usage
-if __name__ == "__main__":
-    db_connection = DatabaseConnection(DATABASE_URL)
-    crud = DocumentCRUD(db_connection)
-    # Add a document
-    crud.add_document("Sample MetaData", "2023-10-01 10:00:00", "2023-10-01 10:00:00", "Sample Content")
-    # Update a document
-    crud.update_document(1, metadata="Updated MetaData")
-    # Delete a document
-    crud.delete_document(1)
+    def get_documents_with_null_doc_date(self):
+        return self.session.query(Document).filter(Document.DocDate == None).all()
+
+    def add_split_document(self, doc_id, metadata, date_read, doc_date, doc_content,
+                           doc_vector=None):
+        existing_split = self.session.query(SplitDocument).filter(
+            SplitDocument.DocID == doc_id,
+            SplitDocument.SplitContent == doc_content
+
+        ).first()
+        if not existing_split:
+            new_split_doc = SplitDocument(DocID=doc_id, MetaData=metadata, DateRead=datetime.now(),
+                                          DocDate=doc_date, SplitContent=doc_content, VectorStored=False)
+            self.session.add(new_split_doc)
+            self.session.commit()
+        else:
+            logging.info(f"Duplicate split found for DocID {doc_id}, skipping insertion.")

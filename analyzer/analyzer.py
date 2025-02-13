@@ -11,7 +11,7 @@ assert os.environ.get("OPENAI_API_KEY")!=None, "You need an OpenAI API Key"
 
 class DocumentAnalyzer:
     def __init__(self):
-        # self.embeddings = OpenAIEmbeddings()
+        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         self.engine = EngineFactory().get_engine()
         self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
 
@@ -36,7 +36,7 @@ class DocumentAnalyzer:
             else:
                 logging.info(f"No date found in document {doc.DocID}")
 
-    def split_and_load_documents(self):
+    def load_splits_and_vectors (self):
         documents = self.doc_crud.get_all_documents()
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
 
@@ -45,10 +45,10 @@ class DocumentAnalyzer:
                 logging.info(f'Printing length of doc: {len(doc.DocContent)}')
                 splits = text_splitter.split_text(doc.DocContent)
                 for split in splits:
-                    # vector = self.embeddings.embed_text(split)
-                    self.doc_crud.add_split_document(doc.DocID, doc.MetaData, doc.DateRead,
-                                                     doc.DocDate, split)
-                    #Add load vector here or elsewhere?
+                    vector = self.embeddings.embed_query(split)
+                    logging.info(f"Generated vector of length {len(vector)} for split")
+                    self.doc_crud.add_split_document(doc.DocID, split, vector,
+                                                     vector_stored=True)
                     logging.info(f"Added split document for DocID {doc.DocID}")
                 self.doc_crud.update_document(doc.DocID, processed=True)
 
@@ -58,5 +58,5 @@ if __name__ == "__main__":
     logging.info("Starting document analyzer...")
     analyzer = DocumentAnalyzer()
     analyzer.insert_doc_date()
-    analyzer.split_and_load_documents()
+    analyzer.load_splits_and_vectors()
     logging.info("Document analyzer finished")

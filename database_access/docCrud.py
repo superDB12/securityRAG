@@ -5,6 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 import logging
+from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
 
@@ -17,6 +18,7 @@ class DatabaseConnection:
     def get_session(self):
         return self.session
 
+#Creating tables below
 class Document(Base):
     __tablename__ = 'documents'
     DocID = Column(Integer, primary_key=True, autoincrement=True)
@@ -31,13 +33,11 @@ class SplitDocument(Base):
     __tablename__ = 'split_documents'
     SplitID = Column(Integer, primary_key=True, autoincrement=True)
     DocID = Column(Integer, ForeignKey('documents.DocID'))
-    MetaData = Column(String)
     DateRead = Column(DateTime)
-    DocDate = Column(DateTime)
     SplitContent = Column(String)
+    #Do we need VectorStored?
     VectorStored = Column(Boolean, default=False)
-    #Add vector representation of the split content here or do we want a separate table for that?
-    #SplitVector = Column(ARRAY(Float))
+    SplitVector = Column(Vector(3072))
     __table_args__ = (UniqueConstraint('DocID', 'SplitContent', name='_docid_splitcontent_uc'),)
 
 class DocumentCRUD:
@@ -83,17 +83,35 @@ class DocumentCRUD:
     def get_documents_with_null_doc_date(self):
         return self.session.query(Document).filter(Document.DocDate == None).all()
 
-    def add_split_document(self, doc_id, metadata, date_read, doc_date, doc_content,
-                           doc_vector=None):
+    def add_split_document(self, doc_id, doc_content,
+        doc_vector, vector_stored=False):
         existing_split = self.session.query(SplitDocument).filter(
             SplitDocument.DocID == doc_id,
             SplitDocument.SplitContent == doc_content
 
         ).first()
         if not existing_split:
-            new_split_doc = SplitDocument(DocID=doc_id, MetaData=metadata, DateRead=datetime.now(),
-                                          DocDate=doc_date, SplitContent=doc_content, VectorStored=False)
+            new_split_doc: SplitDocument = SplitDocument(DocID=doc_id, DateRead=datetime.now(),
+                                          SplitContent=doc_content,
+                                          SplitVector=doc_vector, VectorStored=vector_stored)
             self.session.add(new_split_doc)
             self.session.commit()
         else:
             logging.info(f"Duplicate split found for DocID {doc_id}, skipping insertion.")
+
+    def update_split_document(self, split_id, doc_id=None, doc_content=None, vector_stored=None):
+        split = self.session.query(SplitDocument).filter(SplitDocument.SplitID == split_id).first()
+        if split:
+            if doc_id:
+                split.DocID = doc_id
+            if doc_content:
+                split.SplitContent = doc_content
+            if vector_stored:
+                split.VectorStored = vector_stored
+            self.session.commit()
+
+    def get_one_split(self, split_id):
+        return self.session.query(SplitDocument).filter(SplitDocument.SplitID == split_id).first()
+
+    def get_all_splits(self):
+        return self.session.query(SplitDocument).all()

@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, \
-    UniqueConstraint, Boolean, ARRAY, Float
+    UniqueConstraint, Boolean, ARRAY, Float, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -115,3 +115,9 @@ class DocumentCRUD:
 
     def get_all_splits(self):
         return self.session.query(SplitDocument).all()
+
+    def get_similar_vectors(self, query_vector, top_k=10):
+        return self.session.query(SplitDocument).order_by(
+            SplitDocument.SplitVector.cosine_distance(query_vector)
+        ).limit(top_k).all()
+

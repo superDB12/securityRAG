@@ -1,9 +1,10 @@
 # This code works but it is deprecated and seems like it should be done differently
 
 from langchain_core.runnables import Runnable, RunnableSequence
+
+from database_access.splitCrud import SplitCRUD
 from retriever.retriever import DocumentSearcher
-from database_access.docCrud import DocumentCRUD, DatabaseConnection
-from database_access.engine_factory import EngineFactory
+from database_access.session_factory import SessionFactory
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 import logging
@@ -12,8 +13,7 @@ from langchain.chat_models import init_chat_model
 
 class Generator:
     def __init__(self):
-        self.engine = EngineFactory().get_engine()
-        self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
+        self.split_crud = SplitCRUD(SessionFactory())
         self.doc_searcher = DocumentSearcher()
         self.llm = init_chat_model("gpt-4o-mini", model_provider="openai")
 

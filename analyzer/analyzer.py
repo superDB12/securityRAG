@@ -2,18 +2,19 @@ import os
 import re
 from datetime import datetime
 import logging
+from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from database_access.docCrud import DocumentCRUD, DatabaseConnection
-from database_access.engine_factory import EngineFactory
+from database_access.docCrud import DocumentCRUD
+from database_access.session_factory import SessionFactory
 
-assert os.environ.get("OPENAI_API_KEY")!=None, "You need an OpenAI API Key"
+load_dotenv()
+assert os.environ.get("OPENAI_API_KEY") is not None, "You need an OpenAI API Key"
 
 class DocumentAnalyzer:
     def __init__(self):
         self.embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
-        self.engine = EngineFactory().get_engine()
-        self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
+        self.doc_crud = DocumentCRUD(SessionFactory())
 
     def extract_date(self, text):
         date_pattern = re.compile(r'\b(January|February|March|April|May|June|July|August|September'

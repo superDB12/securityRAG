@@ -1,12 +1,11 @@
-from database_access.docCrud import DocumentCRUD, DatabaseConnection
-from database_access.engine_factory import EngineFactory
+from database_access.docCrud import DocumentCRUD
+from database_access.session_factory import SessionFactory
 from grc_retriever import GRCRetriever
 import logging
 
 class Loader:
     def __init__(self):
-        self.engine = EngineFactory().get_engine()
-        self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
+        self.doc_crud = DocumentCRUD(SessionFactory())
         self.grc_retriever = GRCRetriever(self.doc_crud)
 
 if __name__ == "__main__":

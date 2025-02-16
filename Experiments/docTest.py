@@ -3,7 +3,8 @@ import pg8000
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine
 
-from database_access.docCrud import DatabaseConnection, DocumentCRUD
+from database_access.docCrud import DocumentCRUD
+from database_access.session_factory import SessionFactory
 
 
 def build_engine():
@@ -49,8 +50,8 @@ def build_engine():
 
 # Example usage
 if __name__ == "__main__":
-    db_connection = DatabaseConnection(build_engine())
-    crud = DocumentCRUD(db_connection)
+
+    crud = DocumentCRUD(SessionFactory())
 
     # Add a document
     logging.info("Adding a document...")

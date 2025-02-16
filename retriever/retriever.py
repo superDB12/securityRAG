@@ -7,19 +7,18 @@
 
 import logging
 from langchain_openai import OpenAIEmbeddings
-from database_access.docCrud import DocumentCRUD, DatabaseConnection
-from database_access.engine_factory import EngineFactory
+from database_access.session_factory import SessionFactory
+from database_access.splitCrud import SplitCRUD
 
 
 class DocumentSearcher:
     def __init__(self):
-        self.engine = EngineFactory().get_engine()
-        self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
+        self.split_crud = SplitCRUD(SessionFactory())
 
     def search_similar_splits(self, query_text):
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         query_vector = embeddings.embed_query(query_text)
-        similar_splits = self.doc_crud.get_similar_vectors(query_vector)
+        similar_splits = self.split_crud.get_similar_vectors(query_vector)
         for split in similar_splits:
             logging.info(f"SplitID: {split.SplitID}")
         # Should we return the query_text or vector here also?

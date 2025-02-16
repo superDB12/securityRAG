@@ -3,12 +3,20 @@ from dotenv import load_dotenv
 import pg8000
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 import logging
 
-class EngineFactory:
+
+
+class SessionFactory:
     engine = None
+    SessionMaker = None
+    session = None
+
     def __init__(self):
         self.engine = self.create_engine()
+        self.SessionMaker = sessionmaker(bind=self.engine)
+        self.session = self.SessionMaker()
 
     def create_engine(self):
         try:
@@ -52,3 +60,6 @@ class EngineFactory:
 
     def get_engine(self):
         return self.engine
+
+    def get_session(self):
+        return self.session

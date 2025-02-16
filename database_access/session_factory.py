@@ -3,10 +3,10 @@ from dotenv import load_dotenv
 import pg8000
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 import logging
 
-
+Base = declarative_base()
 
 class SessionFactory:
     engine = None

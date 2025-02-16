@@ -1,15 +1,10 @@
 #TODO separate the docCRUD from the splitCRUD in this file
 
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, \
-    UniqueConstraint, Boolean, ARRAY, Float, func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 import os
 import logging
-from pgvector.sqlalchemy import Vector
-
-Base = declarative_base()
+from database_access.session_factory import Base
 
 
 #Creating tables below

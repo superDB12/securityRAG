@@ -3,7 +3,6 @@
 #Generate answer and return
 #Do we store the answer?
 #If we do store the answer, do we store it in the same table as the original document?
-# call this module "retriever"
 
 
 import logging
@@ -23,6 +22,7 @@ class DocumentSearcher:
         similar_splits = self.doc_crud.get_similar_vectors(query_vector)
         for split in similar_splits:
             logging.info(f"SplitID: {split.SplitID}")
+        # Should we return the query_text or vector here also?
         return similar_splits
 
 if __name__ == "__main__":

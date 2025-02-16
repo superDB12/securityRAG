@@ -1,3 +1,5 @@
+#TODO separate the docCRUD from the splitCRUD in this file
+
 from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, \
     UniqueConstraint, Boolean, ARRAY, Float, func
@@ -83,6 +85,7 @@ class DocumentCRUD:
     def get_documents_with_null_doc_date(self):
         return self.session.query(Document).filter(Document.DocDate == None).all()
 
+#TODO optimize to use offsets and only store the content in the documents table
     def add_split_document(self, doc_id, doc_content,
         doc_vector, vector_stored=False):
         existing_split = self.session.query(SplitDocument).filter(
@@ -116,8 +119,11 @@ class DocumentCRUD:
     def get_all_splits(self):
         return self.session.query(SplitDocument).all()
 
-    def get_similar_vectors(self, query_vector, top_k=10):
-        return self.session.query(SplitDocument).order_by(
+#TODO refactor to add the top_k and cosine distance into a .env file / GCLoud config thing
+    def get_similar_vectors(self, query_vector, top_k=10, distance_threshold=0.7):
+        return self.session.query(SplitDocument).filter(
+            SplitDocument.SplitVector.cosine_distance(query_vector) < distance_threshold
+        ).order_by(
             SplitDocument.SplitVector.cosine_distance(query_vector)
         ).limit(top_k).all()
 

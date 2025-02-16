@@ -16,11 +16,9 @@ class DocumentAnalyzer:
         self.doc_crud = DocumentCRUD(DatabaseConnection(self.engine))
 
     def extract_date(self, text):
-        date_pattern = re.compile(r'\b('
-                                  r'January|JANUARY|February|FEBRUARY|March|MARCH|April|APRIL|May'
-                                  r'|MAY|June|JUNE|July|JULY|August|AUGUST'
-                                  r'|September|SEPTEMBER|October|OCTOBER|November|NOVEMBER'
-                                  r'|December|DECEMBER) \d{1,2}, \d{4}\b')
+        date_pattern = re.compile(r'\b(January|February|March|April|May|June|July|August|September'
+                            r'|October'
+                    r'|November|December) \d{1,2}, \d{4}\b', re.IGNORECASE)
         match = date_pattern.search(text)
         if match:
             return datetime.strptime(match.group(), '%B %d, %Y')

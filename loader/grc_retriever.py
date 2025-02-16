@@ -34,8 +34,6 @@ class GRCRetriever:
 
         logging.info("Done loading docs \n")
 
-    #TODO
-    #Function to get list of year urls from the main page
     def get_year_urls(self, main_url: str):
         response = requests.get(main_url)
         soup = BeautifulSoup(response.content, 'html.parser')

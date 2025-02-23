@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security RAG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Security RAG Query</h1>
+    <form action="/query" method="post">
+        <label for="query">Enter your query:</label>
+        <textarea type="text" id="query" name="query" required> </textarea>
+        <button type="submit">Submit</button>
+    </form>
+    {% if query %}
+        <h2>Query:</h2>
+        <p>{{ query }}</p>
+        <h2>Response:</h2>
+        <p>{{ response }}</p>
+    {% endif %}
+
+</body>
+</html>

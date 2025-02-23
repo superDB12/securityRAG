@@ -1,5 +1,3 @@
-#TODO separate the docCRUD from the splitCRUD in this file
-
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, Boolean
 import os
@@ -56,6 +54,9 @@ class DocumentCRUD:
 
     def get_all_documents(self):
         return self.session.query(Document).all()
+
+    def get_document_by_id(self, doc_id):
+        return self.session.query(Document).filter(Document.DocID == doc_id).first()
 
     def get_documents_with_null_doc_date(self):
         return self.session.query(Document).filter(Document.DocDate == None).all()

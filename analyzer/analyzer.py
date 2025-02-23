@@ -53,8 +53,7 @@ class DocumentAnalyzer:
                 for split in splits:
                     vector = self.embeddings.embed_query(split)
                     logging.info(f"Generated vector of length {len(vector)} for split")
-                    self.split_crud.add_split_document(doc.DocID, split, split_start_offset, len(split), vector,
-                                                     vector_stored=True)
+                    self.split_crud.add_split_document(doc.DocID, split_start_offset, len(split), vector)
                     logging.info(f"Added split document for DocID {doc.DocID}")
                     logging.info(f"Split start offset: {split_start_offset}, split length: {len(split)}")
                     split_start_offset = split_start_offset + len(split)

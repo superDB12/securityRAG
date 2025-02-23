@@ -20,7 +20,7 @@ class DocumentSearcher:
         query_vector = embeddings.embed_query(query_text)
         similar_splits = self.split_crud.get_similar_vectors(query_vector)
         for split in similar_splits:
-            logging.info(f"SplitID: {split.SplitID}")
+            logging.info(f"DocID: {split.DocID} SplitID: {split.SplitID}" )
         # Should we return the query_text or vector here also?
         return similar_splits
 
@@ -29,5 +29,6 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logging.info("Starting document searcher...")
     searcher = DocumentSearcher()
-    search = searcher.search_similar_splits("What does Steve say about trojan horse attacks?")
+    search = searcher.search_similar_splits("What are some general security practices that Steve "
+                                            "recommends?")
     logging.info("Document searcher finished")

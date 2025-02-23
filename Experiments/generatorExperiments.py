@@ -1,8 +1,8 @@
-# This code works but it is deprecated and seems like it should be done differently
+from datetime import datetime
 
 from langchain_core.runnables import Runnable, RunnableSequence
-
 from database_access.splitCrud import SplitCRUD
+from database_access.requestAndResponseLogCRUD import RequestAndResponseLogCRUD
 from retriever.retriever import DocumentSearcher
 from database_access.session_factory import SessionFactory
 from langchain.prompts import PromptTemplate
@@ -16,13 +16,15 @@ class Generator:
         self.split_crud = SplitCRUD(SessionFactory())
         self.doc_searcher = DocumentSearcher()
         self.llm = init_chat_model("gpt-4o-mini", model_provider="openai")
+        self.request_response = RequestAndResponseLogCRUD(SessionFactory())
 
     def generate_response(self, query_text):
         # Search for similar splits
         similar_splits = self.doc_searcher.search_similar_splits(query_text)
 
         # Prepare the prompt with the query and similar splits
-        splits_text = "\n".join([split.SplitContent for split in similar_splits])
+        splits_text = "\n".join([self.split_crud.get_split_content(split.SplitID) for split in
+                                                                   similar_splits])
         prompt = f"Query: {query_text}\n\nRelevant Information:\n{splits_text}\n\nAnswer the query based on the relevant information provided."
 
         # Create a LangChain prompt template
@@ -41,6 +43,8 @@ class Generator:
         response = sequence.invoke({"query_text": query_text, "splits_text": splits_text})
         # response = runnable.invoke(
         #     prompt_template.format(query_text=query_text, splits_text=splits_text))
+        # self.request_response.add_request_and_response_log(query_text, response.content,
+        #                                                    date=datetime.now())
         return response
 
 
@@ -49,6 +53,6 @@ if __name__ == "__main__":
     logger = logging.getLogger()
     logging.info("Starting generator...")
     generator = Generator()
-    response = generator.generate_response("What does Steve say about trojan horse attacks?")
+    response = generator.generate_response("What episode does Steve talk about TOAD?")
     logging.info(f"Response: {response}")
     logging.info("Generator finished")

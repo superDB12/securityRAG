@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security RAG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Security RAG Query</h1>
+
+        <h2>Query:</h2>
+        <p>{{ query }}</p>
+        <h2>Response:</h2>
+        <p>{{ result }}</p>
+
+    <h2>Feedback:</h2>
+    <form action="/results" method="post">
+        <input type="hidden" name="query" value="{{ query }}"></input>
+        <input type="hidden" name="response" value="{{ result }}"></input>
+        <select for="score" name="score" required>
+            <option value="1">WTF</option>
+            <option value="2">Bad</option>
+            <option value="3">Ok</option>
+            <option value="4">Good</option>
+            <option value="5">Great</option>
+        <textarea type="text" id="comments" name="comments" required> </textarea>
+        <button type="submit">Submit</button>
+
+</html>

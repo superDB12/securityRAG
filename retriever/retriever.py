@@ -21,6 +21,7 @@ class DocumentSearcher:
         similar_splits = self.split_crud.get_similar_vectors(query_vector)
         for split in similar_splits:
             logging.info(f"DocID: {split.DocID} SplitID: {split.SplitID}" )
+            logging.info(f"Split content: {self.split_crud.get_split_content(split.SplitID)}")
         # Should we return the query_text or vector here also?
         return similar_splits
 

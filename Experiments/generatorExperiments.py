@@ -25,7 +25,8 @@ class Generator:
         # Prepare the prompt with the query and similar splits
         splits_text = "\n".join([self.split_crud.get_split_content(split.SplitID) for split in
                                                                    similar_splits])
-        prompt = f"Query: {query_text}\n\nRelevant Information:\n{splits_text}\n\nAnswer the query based on the relevant information provided."
+        prompt = (f"Query: {query_text}\n\nRelevant Information:\n{splits_text}\n\nAnswer the "
+                  f"query based on the relevant information provided. Say that the information is not available if you are not able to find suitable response")
 
         # Create a LangChain prompt template
         prompt_template = PromptTemplate(template=prompt,

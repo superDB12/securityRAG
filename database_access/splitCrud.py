@@ -16,6 +16,7 @@ load_dotenv()
 assert os.environ.get("MAX_SPLITS") is not None, "You have not set MAX_SPLITS."
 assert os.environ.get("DIST_THRESHOLD") is not None, "You have not set DIST_THRESHOLD."
 
+#TODO: Add metadata for the split documents
 
 #Add a new table for split documents here or in a new file?
 class SplitDocument(Base):

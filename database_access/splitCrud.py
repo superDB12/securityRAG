@@ -40,7 +40,7 @@ class SplitCRUD:
 
 #TODO optimize to use offsets and only store the content in the documents table
     def add_split_document(self, doc_id, split_start_offset, split_length,
-        doc_vector):
+                           split_vector):
         existing_split = self.session.query(SplitDocument).filter(
             SplitDocument.DocID == doc_id,
             SplitDocument.SplitStartOffset == split_start_offset
@@ -48,7 +48,7 @@ class SplitCRUD:
         ).first()
         if not existing_split:
             new_split_doc: SplitDocument = SplitDocument(DocID=doc_id, DateRead=datetime.now(), SplitStartOffset=split_start_offset, SplitLength=split_length,
-                                          SplitVector=doc_vector)
+                                                         SplitVector=split_vector)
             self.session.add(new_split_doc)
             self.session.commit()
         else:

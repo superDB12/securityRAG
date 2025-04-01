@@ -80,11 +80,28 @@ class MyTestCase(unittest.TestCase):
     def test_semantic_search(self):
         # prerequisite for this test is to run Analyzer to build all the splits and the vectors
         #define a test phrase
-        # run our semantic search in SplitCrud with the predefined phrase
-        vectors = get_similar_vectors(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))),
-                                distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
+        test_phrase = "a tease for 160 critical patches from Microsoft?"
+        max_splits = int(os.environ.get("MAX_SPLITS"))
+        distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
 
-    # log the results
+        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
+        query_vector = embeddingEngine.embed_query(test_phrase)
+
+        # run our semantic search in SplitCrud with the predefined phrase
+        split_crud = SplitCRUD(SessionFactory())
+        vectors = split_crud.get_similar_vectors(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+
+        # log the results
+        logging.info(f"Found {len(vectors)} similar vectors.")
+        self.assertFalse((len(vectors)==0),f"No similar vectors found for the query: '{test_phrase}'")
+
+        for vector in vectors:
+            logging.info(f"Split ID: {vector.SplitID}, Doc ID: {vector.DocID}, Split Length: {vector.SplitLength}")
+            # log the split content
+            split_text = split_crud.get_split_content(vector.SplitID)
+            logging.info(f"Split Content: {split_text}")
+            logging.info("-----------------------")
+
         # assert if the one we expect isn't found
 
 

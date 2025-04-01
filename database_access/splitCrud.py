@@ -74,6 +74,8 @@ class SplitCRUD:
         return self.session.query(SplitDocument).all()
 
     def get_similar_vectors(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
+        query_vector_size = len(query_vector)
+        logging.info(f'Running get_similar_vectors with {query_vector_size} sized vector with top_k: {top_k}, distance threshold: {distance_threshold}')
         return self.session.query(SplitDocument).filter(
             SplitDocument.SplitVector.cosine_distance(query_vector) < distance_threshold
         ).order_by(

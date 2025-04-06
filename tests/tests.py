@@ -77,10 +77,43 @@ class MyTestCase(unittest.TestCase):
                     logging.info(f"{split}")
                     logging.info("-----------------------")
 
+    #TODO: Build this out to match tests and bring in QueryString from text files
+    def test_for_expected_results_from_semantic_search(self, QueryString, ExpectedDocID,
+                                                       ExpectedSplitID=None):
+        doc_crud = DocumentCRUD(SessionFactory())
+        test_phrase = "a tease for 160 critical patches from Microsoft?"
+        max_splits = int(os.environ.get("MAX_SPLITS"))
+        distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
+
+        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
+        query_vector = embeddingEngine.embed_query(test_phrase)
+
+        split_crud = SplitCRUD(SessionFactory())
+        vectors = split_crud.get_similar_vectors(query_vector, top_k=max_splits,
+                                                 distance_threshold=distance_threshold)
+        found_it = False
+
+        for vector in vectors:
+            doc_id = vector.DocID
+            split_id = vector.SplitID
+            if doc_id == ExpectedDocID and split_id == ExpectedSplitID:
+                found_it = True
+                break
+        self.assertFalse(found_it, f'Expected results not found. QueryString: {test_phrase}, '
+                                   f'ExpectedDocID: {ExpectedDocID}, ExpectedSplitID: {ExpectedSplitID}')
+
     def test_semantic_search(self):
         # prerequisite for this test is to run Analyzer to build all the splits and the vectors
         #define a test phrase
-        test_phrase = "a tease for 160 critical patches from Microsoft?"
+        # test_phrase = ("SHOW TEASE:  It's time for Security Now!.  Steve Gibson is here with a rundown of the, what is it, 160 critical patches Microsoft shipped last week on Patch Tuesday?  Microsoft's also forcing you to take Outlook.  GoDaddy is going to get much more serious about its hosting security.  And then, get ready, get your propeller hats on because there will be math.  We're going to brute force your one-time password authenticator.  Well, at least we'll talk about how hard or easy it would be to do.  It's going to be a fun episode, next on Security Now!."
+        #                "LEO LAPORTE:  This is Security Now! with Steve Gibson, Episode 1009, recorded Tuesday, January 21st, 2025:  Attacking TOTP."
+        #                "It's time for Security Now!, the show where we talk about security, privacy, protecting yourself and your loved ones on the great big vast Internet with this guy right here, our security in ch")
+        # test_phrase = "What episode is 160 critical patches from Microsoft?"
+        # test_phrase = "show tease"
+        # test_phrase = "show tease: It's time for Security Now!"
+        # test_phrase = "GoDaddy"
+        # test_phrase = "Starwood Group"
+        test_phrase = "STEVE:  That Starwood Group breach incident.  What we recall from that is that Marriott acquired the independent Starwood Group whose network security was a lackluster afterthought, if you can call it that.  You know, like way out of date.  They didn't bother to update, and there were, like, known, well-known problems.  But Marriott, the acquirer, never took the time to thoroughly vet what they were purchasing, and that lack of oversight over their purchase came back to bite them."
         max_splits = int(os.environ.get("MAX_SPLITS"))
         distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
 
@@ -96,11 +129,12 @@ class MyTestCase(unittest.TestCase):
         self.assertFalse((len(vectors)==0),f"No similar vectors found for the query: '{test_phrase}'")
 
         for vector in vectors:
+            logging.info("--------Begin Vector---------------")
             logging.info(f"Split ID: {vector.SplitID}, Doc ID: {vector.DocID}, Split Length: {vector.SplitLength}")
             # log the split content
             split_text = split_crud.get_split_content(vector.SplitID)
             logging.info(f"Split Content: {split_text}")
-            logging.info("-----------------------")
+            logging.info("--------End Vector---------------")
 
         # assert if the one we expect isn't found
 

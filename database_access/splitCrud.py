@@ -1,5 +1,5 @@
 from datetime import datetime
-
+import numpy as np
 from dns.e164 import query
 from dotenv import load_dotenv
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, \
@@ -11,6 +11,24 @@ from sqlalchemy.orm import aliased, Session
 
 from .docCrud import Document, DocumentCRUD
 from .session_factory import Base
+
+import logging
+from logging.config import dictConfig
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'DEBUG',
+        'handlers': ['wsgi']
+    }
+})
 
 load_dotenv()
 assert os.environ.get("MAX_SPLITS") is not None, "You have not set MAX_SPLITS."
@@ -73,14 +91,40 @@ class SplitCRUD:
     def get_all_splits(self):
         return self.session.query(SplitDocument).all()
 
+    def normalize_split_vectors(self, vector):
+        # Normalize the vector to unit length
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            normalized_vector = vector
+        else:
+            normalized_vector =  vector / norm
+        logging.info(f'\nVector...........: {vector}'
+                     f'\nNormalized Vector: {normalized_vector}')
+        return normalized_vector
+        # return vector
+
     def get_similar_vectors(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
         query_vector_size = len(query_vector)
+        # normalized_query_vector = query_vector
+        normalized_query_vector = self.normalize_split_vectors(query_vector)
         logging.info(f'Running get_similar_vectors with {query_vector_size} sized vector with top_k: {top_k}, distance threshold: {distance_threshold}')
-        return self.session.query(SplitDocument).filter(
-            SplitDocument.SplitVector.cosine_distance(query_vector) < distance_threshold
+        #TODO assign query results to variable and log it to make it easier to debug
+        results = self.session.query(
+            SplitDocument,
+            SplitDocument.SplitVector.cosine_distance(normalized_query_vector).label('distance')
+        ).filter(
+            SplitDocument.SplitVector.cosine_distance(normalized_query_vector) < distance_threshold
         ).order_by(
-            SplitDocument.SplitVector.cosine_distance(query_vector)
+            SplitDocument.SplitVector.cosine_distance(normalized_query_vector)
         ).limit(top_k).all()
+        split_doc_array = []
+        for result in results:
+            logging.info(f"SplitID: {result[0].SplitID}, DocID: {result[0].DocID}, Distance:"
+                         f" {result[1]}")
+            logging.info( f"\nNormalized Query:{normalized_query_vector}"
+                          f"\nStored Vector...: {result[0].SplitVector}")
+            split_doc_array.append(result[0])
+        return split_doc_array
 
     #This accomplishes getting the split content without doing a Join
     def get_split_content(self, split_id):

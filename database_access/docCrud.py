@@ -78,3 +78,11 @@ class DocumentCRUD:
     def get_documents_with_null_doc_date(self):
         return self.session.query(Document).filter(Document.EpisodeAirDate == None).all()
 
+    def get_document_by_episode_number(self, episode_number):
+        # Ensure episode_number is an integer, as it's stored as Integer in the DB
+        try:
+            ep_num = int(episode_number)
+        except (ValueError, TypeError):
+            logging.error(f"Invalid episode_number format: {episode_number}. Cannot query.")
+            return None
+        return self.session.query(Document).filter(Document.EpisodeNumber == ep_num).first()

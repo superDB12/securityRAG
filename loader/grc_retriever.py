@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
-from langchain_community.document_loaders import RecursiveUrlLoader
+from langchain_community.document_loaders import RecursiveUrlLoader, WebBaseLoader
 import logging
 from datetime import datetime # Ensure datetime is imported
 
@@ -91,17 +91,15 @@ class GRCRetriever:
                 doc_title = self.extract_title(header_data)
                 doc_hosts = self.extract_hosts(header_data)
 
-                self.doc_crud.add_document(
-                    doc_url=doc.metadata['source'],
-                    doc_date=doc_date,
-                    doc_content=doc.page_content,
-                    podcast_title=doc_series,
-                    episode_number=episode_number,
-                    episode_title=doc_title,
-                    hosts=doc_hosts,
-                    date_added=datetime.now()
-                )
-        logging.info("Done loading current year docs \n")
+                self.doc_crud.add_document(source_url=doc.metadata['source'],
+                                           date_read=datetime.now(),
+                                           doc_date=doc_date,
+                                           doc_content=doc.page_content,
+                                           podcast_title=doc_series,
+                                           episode_number=episode_number,
+                                           episode_title=doc_title,
+                                           hosts=doc_hosts)
+                logging.info("Done loading current year docs \n")
 
     def get_year_urls(self, main_url: str):
         response = requests.get(main_url)
@@ -145,14 +143,52 @@ class GRCRetriever:
                     doc_title = self.extract_title(header_data)
                     doc_hosts = self.extract_hosts(header_data)
 
-                    self.doc_crud.add_document(
-                        doc_url=doc.metadata['source'],
-                        doc_date=doc_date,
-                        doc_content=doc.page_content,
-                        podcast_title=doc_series,
-                        episode_number=episode_number,
-                        episode_title=doc_title,
-                        hosts=doc_hosts,
-                        date_added=datetime.now()
-                    )
+                    self.doc_crud.add_document(source_url=doc.metadata['source'],
+                                               date_read=datetime.now(),
+                                               doc_date=doc_date,
+                                               doc_content=doc.page_content,
+                                               podcast_title=doc_series,
+                                               episode_number=episode_number,
+                                               episode_title=doc_title,
+                                               hosts=doc_hosts)
+
         logging.info("Done loading historical docs \n")
+
+    # Function to load a specific episode (1009) for testing purposes
+    def load_episode_1009(self):
+        logging.info("Loading episode 1009...")
+        anchor_rgx = r'<a\s+(?:[^>]*?\s+)?href="([^"]*(?=txt)[^"]*)"'
+        file_path = "https://www.grc.com/sn/sn-1009.txt"
+        loader = RecursiveUrlLoader(file_path,
+                                    max_depth=4,
+                                    link_regex=anchor_rgx,
+                                    base_url="https://www.grc.com/sn")
+        # loader = WebBaseLoader("https://www.grc.com/sn")
+        docs = loader.load()
+        doc = docs[0]
+
+        header_data = doc.page_content[:500]  # Extract header
+        episode_number = self.extract_episode(header_data)
+
+        if episode_number is None:
+            logging.warning(f"Could not extract episode number from {doc.metadata['source']}. Skipping.")
+            return
+
+        existing_doc = self.doc_crud.get_document_by_episode_number(episode_number)
+        if existing_doc:
+            logging.info(f"Episode {episode_number} from {doc.metadata['source']} already exists. Skipping.")
+        else:
+            doc_date = self.extract_date(header_data)
+            doc_series = self.extract_series(header_data)
+            doc_title = self.extract_title(header_data)
+            doc_hosts = self.extract_hosts(header_data)
+
+            self.doc_crud.add_document(source_url=doc.metadata['source'],
+                                       date_read=datetime.now(),
+                                       doc_date=doc_date,
+                                       doc_content=doc.page_content,
+                                       podcast_title=doc_series,
+                                       episode_number=episode_number,
+                                       episode_title=doc_title,
+                                       hosts=doc_hosts)
+        logging.info("Done loading Episode 1009 \n")

@@ -105,23 +105,24 @@ class SplitCRUD:
 
     def get_similar_vectors(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
         query_vector_size = len(query_vector)
+        # David and John confirmed we do not need to normalize the vectors
         # normalized_query_vector = query_vector
-        normalized_query_vector = self.normalize_split_vectors(query_vector)
+        # normalized_query_vector = self.normalize_split_vectors(query_vector)
         logging.info(f'Running get_similar_vectors with {query_vector_size} sized vector with top_k: {top_k}, distance threshold: {distance_threshold}')
         #TODO assign query results to variable and log it to make it easier to debug
         results = self.session.query(
             SplitDocument,
-            SplitDocument.SplitVector.cosine_distance(normalized_query_vector).label('distance')
+            SplitDocument.SplitVector.cosine_distance(query_vector).label('distance')
         ).filter(
-            SplitDocument.SplitVector.cosine_distance(normalized_query_vector) < distance_threshold
+            SplitDocument.SplitVector.cosine_distance(query_vector) < distance_threshold
         ).order_by(
-            SplitDocument.SplitVector.cosine_distance(normalized_query_vector)
+            SplitDocument.SplitVector.cosine_distance(query_vector)
         ).limit(top_k).all()
         split_doc_array = []
         for result in results:
             logging.info(f"SplitID: {result[0].SplitID}, DocID: {result[0].DocID}, Distance:"
                          f" {result[1]}")
-            logging.info( f"\nNormalized Query:{normalized_query_vector}"
+            logging.info( f"\nNormalized Query:{query_vector}"
                           f"\nStored Vector...: {result[0].SplitVector}")
             split_doc_array.append(result[0])
         return split_doc_array

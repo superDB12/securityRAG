@@ -41,14 +41,17 @@ class DocumentAnalyzer:
                 splits = text_splitter.split_text(doc.DocContent)
                 for split in splits:
                     vector = self.embeddings.embed_query(episode_metadata + split)
-                    normalized_vector = self.split_crud.normalize_split_vectors(vector)
+                    # David and John found that embedding the metadata may throw off the symantec meaning.
+                    # We also confirmed that we don't need to normalize the vectors.
+                    # vector = self.embeddings.embed_query(episode_metadata + split)
+                    # normalized_vector = self.split_crud.normalize_split_vectors(vector)
                     #TODO: ensure that the metadata is actually being appended to the split content
                     logging.info(f"Episode metadata: {episode_metadata}")
                     logging.info(f"Split content: {split}")
                     logging.info(f"Generated vector of length {len(vector)} for split")
 
                     self.split_crud.add_split_document(doc.DocID, split_start_offset, len(split),
-                                                       normalized_vector)
+                                                       vector)
                     logging.info(f"Added split document for DocID {doc.DocID}")
                     logging.info(f"Split start offset: {split_start_offset}, split length: {len(split)}")
                     split_start_offset = split_start_offset + len(split)

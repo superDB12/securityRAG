@@ -31,6 +31,7 @@ dictConfig({
 })
 
 load_dotenv()
+DEBUG_SPLIT_CONTENT_ENABLED = os.environ.get("DEBUG_SPLIT_CONTENT_ENABLED", "False").lower() == "true"
 assert os.environ.get("MAX_SPLITS") is not None, "You have not set MAX_SPLITS."
 assert os.environ.get("DIST_THRESHOLD") is not None, "You have not set DIST_THRESHOLD."
 
@@ -42,12 +43,17 @@ class SplitDocument(Base):
     SplitID = Column(Integer, primary_key=True, autoincrement=True)
     DocID = Column(Integer, ForeignKey('documents.DocID'))
     DateRead = Column(DateTime)
-    # SplitContent = Column(String)
+    SplitContent = Column(String)
     SplitStartOffset = Column(Integer)
     SplitLength = Column(Integer)
     #Do we need VectorStored?
     # VectorStored = Column(Boolean, default=False)
     SplitVector = Column(Vector(3072))
+
+    # Conditionally add SplitContent
+    if DEBUG_SPLIT_CONTENT_ENABLED:
+        SplitContent = Column(String, nullable=True) # Add as nullable String
+
     __table_args__ = (UniqueConstraint('DocID', 'SplitStartOffset', name='_docid_splitstartoffset_uc'),)
 
 class SplitCRUD:
@@ -58,15 +64,23 @@ class SplitCRUD:
 
 #TODO optimize to use offsets and only store the content in the documents table
     def add_split_document(self, doc_id, split_start_offset, split_length,
-                           split_vector):
+                           split_vector, SplitContent=None):
         existing_split = self.session.query(SplitDocument).filter(
             SplitDocument.DocID == doc_id,
             SplitDocument.SplitStartOffset == split_start_offset
-
         ).first()
         if not existing_split:
-            new_split_doc: SplitDocument = SplitDocument(DocID=doc_id, DateRead=datetime.now(), SplitStartOffset=split_start_offset, SplitLength=split_length,
-                                                         SplitVector=split_vector)
+            split_doc_args = {
+                "DocID": doc_id,
+                "DateRead": datetime.now(),
+                "SplitStartOffset": split_start_offset,
+                "SplitLength": split_length,
+                "SplitVector": split_vector
+            }
+            if DEBUG_SPLIT_CONTENT_ENABLED and SplitContent is not None:
+                split_doc_args["SplitContent"] = SplitContent
+
+            new_split_doc: SplitDocument = SplitDocument(**split_doc_args)
             self.session.add(new_split_doc)
             self.session.commit()
         else:

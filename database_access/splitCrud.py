@@ -31,6 +31,7 @@ dictConfig({
 })
 
 load_dotenv()
+DEBUG_SPIT_TEXT_ENABLED = os.environ.get("DEBUG_SPIT_TEXT_ENABLED", "False").lower() == "true"
 assert os.environ.get("MAX_SPLITS") is not None, "You have not set MAX_SPLITS."
 assert os.environ.get("DIST_THRESHOLD") is not None, "You have not set DIST_THRESHOLD."
 
@@ -48,6 +49,11 @@ class SplitDocument(Base):
     #Do we need VectorStored?
     # VectorStored = Column(Boolean, default=False)
     SplitVector = Column(Vector(3072))
+
+    # Conditionally add SpitText
+    if DEBUG_SPIT_TEXT_ENABLED:
+        SpitText = Column(String, nullable=True) # Add as nullable String
+
     __table_args__ = (UniqueConstraint('DocID', 'SplitStartOffset', name='_docid_splitstartoffset_uc'),)
 
 class SplitCRUD:
@@ -58,15 +64,23 @@ class SplitCRUD:
 
 #TODO optimize to use offsets and only store the content in the documents table
     def add_split_document(self, doc_id, split_start_offset, split_length,
-                           split_vector):
+                           split_vector, SpitText=None):
         existing_split = self.session.query(SplitDocument).filter(
             SplitDocument.DocID == doc_id,
             SplitDocument.SplitStartOffset == split_start_offset
-
         ).first()
         if not existing_split:
-            new_split_doc: SplitDocument = SplitDocument(DocID=doc_id, DateRead=datetime.now(), SplitStartOffset=split_start_offset, SplitLength=split_length,
-                                                         SplitVector=split_vector)
+            split_doc_args = {
+                "DocID": doc_id,
+                "DateRead": datetime.now(),
+                "SplitStartOffset": split_start_offset,
+                "SplitLength": split_length,
+                "SplitVector": split_vector
+            }
+            if DEBUG_SPIT_TEXT_ENABLED and SpitText is not None:
+                split_doc_args["SpitText"] = SpitText
+
+            new_split_doc: SplitDocument = SplitDocument(**split_doc_args)
             self.session.add(new_split_doc)
             self.session.commit()
         else:

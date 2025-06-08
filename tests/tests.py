@@ -5,6 +5,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from database_access.docCrud import DocumentCRUD
 from database_access.session_factory import SessionFactory
 from database_access.splitCrud import SplitCRUD
+from database_access import splitCrud # Added for reloading
+import importlib # Added for reloading
 import logging
 from logging.config import dictConfig
 
@@ -137,6 +139,99 @@ class MyTestCase(unittest.TestCase):
             logging.info("--------End Vector---------------")
 
         # assert if the one we expect isn't found
+
+    def test_spit_text_functionality(self):
+        test_doc_id = 1 # Using existing test DocID
+        test_split_vector = [0.1] * 3072 # text-embedding-3-large uses 3072
+        sample_spit_text = "This is a test spit text."
+
+        # Ensure DocID=1 exists for FK constraint if not handled by global setup
+        # For simplicity, we assume DocID=1 is usable as per other tests.
+        # If DocCRUD needed, it would be:
+        # doc_crud = DocumentCRUD(SessionFactory())
+        # if not doc_crud.get_document_by_id(test_doc_id):
+        #     doc_crud.add_document(doc_id=test_doc_id, doc_content="Dummy content for SpitText test", file_name="dummy.txt")
+
+
+        # Sub-test 1: DEBUG_SPIT_TEXT_ENABLED is True, SpitText provided
+        with self.subTest("SpitText enabled, text provided"):
+            os.environ["DEBUG_SPIT_TEXT_ENABLED"] = "true"
+            importlib.reload(splitCrud)
+            crud = splitCrud.SplitCRUD(SessionFactory())
+
+            test_split_start_offset = 1000 # Unique offset
+            crud.add_split_document(doc_id=test_doc_id,
+                                    split_start_offset=test_split_start_offset,
+                                    split_length=10,
+                                    split_vector=test_split_vector,
+                                    SpitText=sample_spit_text)
+
+            retrieved_split = crud.session.query(splitCrud.SplitDocument).filter_by(DocID=test_doc_id, SplitStartOffset=test_split_start_offset).first()
+
+            self.assertIsNotNone(retrieved_split, "Split should be created")
+            self.assertTrue(hasattr(retrieved_split, "SpitText"), "SpitText attribute should exist")
+            self.assertEqual(retrieved_split.SpitText, sample_spit_text, "SpitText content mismatch")
+
+            crud.session.delete(retrieved_split) # Clean up
+            crud.session.commit()
+
+            del os.environ["DEBUG_SPIT_TEXT_ENABLED"]
+            importlib.reload(splitCrud) # Reset module state
+
+        # Sub-test 2: DEBUG_SPIT_TEXT_ENABLED is True, SpitText not provided (None)
+        with self.subTest("SpitText enabled, text not provided"):
+            os.environ["DEBUG_SPIT_TEXT_ENABLED"] = "true"
+            importlib.reload(splitCrud)
+            crud = splitCrud.SplitCRUD(SessionFactory())
+
+            test_split_start_offset = 1001 # Unique offset
+            crud.add_split_document(doc_id=test_doc_id,
+                                    split_start_offset=test_split_start_offset,
+                                    split_length=10,
+                                    split_vector=test_split_vector,
+                                    SpitText=None)
+
+            retrieved_split = crud.session.query(splitCrud.SplitDocument).filter_by(DocID=test_doc_id, SplitStartOffset=test_split_start_offset).first()
+
+            self.assertIsNotNone(retrieved_split, "Split should be created")
+            self.assertTrue(hasattr(retrieved_split, "SpitText"), "SpitText attribute should exist")
+            self.assertIsNone(retrieved_split.SpitText, "SpitText should be None")
+
+            crud.session.delete(retrieved_split) # Clean up
+            crud.session.commit()
+
+            del os.environ["DEBUG_SPIT_TEXT_ENABLED"]
+            importlib.reload(splitCrud) # Reset module state
+
+        # Sub-test 3: DEBUG_SPIT_TEXT_ENABLED is False
+        with self.subTest("SpitText disabled"):
+            # Ensure it's disabled (either not set or "false")
+            if "DEBUG_SPIT_TEXT_ENABLED" in os.environ:
+                del os.environ["DEBUG_SPIT_TEXT_ENABLED"]
+            importlib.reload(splitCrud) # Reload to ensure SplitDocument is defined without SpitText
+
+            crud = splitCrud.SplitCRUD(SessionFactory())
+
+            test_split_start_offset = 1002 # Unique offset
+            # Attempt to add with SpitText, it should be ignored by add_split_document
+            # and the attribute should not exist on the model
+            crud.add_split_document(doc_id=test_doc_id,
+                                    split_start_offset=test_split_start_offset,
+                                    split_length=10,
+                                    split_vector=test_split_vector,
+                                    SpitText=sample_spit_text)
+
+            retrieved_split = crud.session.query(splitCrud.SplitDocument).filter_by(DocID=test_doc_id, SplitStartOffset=test_split_start_offset).first()
+
+            self.assertIsNotNone(retrieved_split, "Split should be created")
+            self.assertFalse(hasattr(retrieved_split, "SpitText"), "SpitText attribute should NOT exist when disabled")
+
+            crud.session.delete(retrieved_split) # Clean up
+            crud.session.commit()
+
+            # Optional: reload splitCrud again if other tests expect it to be in a specific state
+            # For now, leave it as is (DEBUG_SPIT_TEXT_ENABLED is false)
+            # importlib.reload(splitCrud)
 
 
 if __name__ == '__main__':

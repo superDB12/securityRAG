@@ -1,5 +1,5 @@
 import os
-# from dotenv import load_dotenv # Removed: no longer loading .env for these secrets
+from dotenv import load_dotenv
 import pg8000
 from google.cloud.sql.connector import Connector, IPTypes
 from utils.secret_manager import get_secret # Added: for fetching secrets
@@ -20,11 +20,11 @@ class SessionFactory:
         self.session = self.SessionMaker()
 
     def create_engine(self):
-        # try:
-        #     load_dotenv() # Removed: .env no longer primary source for these
-        # except Exception as ex:
-        #     logging.info(f'Sorry failed to load .env file: {ex}')
-        #     raise ex
+        try:
+            load_dotenv() # Removed: .env no longer primary source for these
+        except Exception as ex:
+            logging.info(f'Sorry failed to load .env file: {ex}')
+            raise ex
 
         PROJECT_ID = os.getenv('PROJECT_ID') # Still needed for Secret Manager & Cloud SQL
         REGION = os.getenv('REGION') # Still needed for Cloud SQL

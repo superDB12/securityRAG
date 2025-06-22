@@ -9,10 +9,28 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 import logging
 from langchain.chat_models import init_chat_model
+import os # Added for os.environ and os.getenv
+from utils.secret_manager import get_secret # Added for fetching secrets
 
 
 class Generator:
     def __init__(self):
+        # Fetch and set OPENAI_API_KEY from Secret Manager
+        try:
+            project_id = os.getenv("PROJECT_ID")
+            if not project_id:
+                logging.error("PROJECT_ID environment variable not set. Cannot fetch OpenAI API Key.")
+                # Or raise an error, depending on desired behavior
+                # For now, we'll let init_chat_model fail if key is not found through other means
+            else:
+                openai_api_key = get_secret(project_id, "OPENAI_API_KEY")
+                os.environ["OPENAI_API_KEY"] = openai_api_key
+                logging.info("Successfully fetched and set OPENAI_API_KEY.")
+        except Exception as e:
+            # Log the error and proceed. Langchain will raise an error if the key isn't found.
+            logging.error(f"Error fetching OPENAI_API_KEY from Secret Manager: {e}")
+            # Potentially raise an error here if the API key is critical for startup
+
         self.split_crud = SplitCRUD(SessionFactory())
         self.doc_searcher = DocumentSearcher()
         self.llm = init_chat_model("gpt-4o-mini", model_provider="openai")

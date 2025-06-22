@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Input Flask App</title>
+</head>
+<body>
+  <h1>Speak something!</h1>
+  <button onclick="startRecognition()">Start Voice Input</button>
+  <p id="output">...</p>
+
+  <script>
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById('output').textContent = 'You said: ' + transcript;
+
+        // Send it to the server
+        fetch('/voice-input', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ text: transcript })
+        }).then(res => res.json())
+          .then(data => console.log('Server says:', data.response));
+      };
+
+      recognition.onerror = function(event) {
+        console.error('Error occurred in recognition: ' + event.error);
+      };
+
+      recognition.start();
+    }
+  </script>
+</body>
+</html>

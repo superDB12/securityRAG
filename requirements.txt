@@ -10,4 +10,5 @@ pgvector>=0.4.0
 python-dotenv>=1.1.0
 requests>=2.32.3
 SQLAlchemy>=2.0.40
+google-cloud-secret-manager>=2.16.0
 

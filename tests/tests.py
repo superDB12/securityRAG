@@ -6,6 +6,7 @@ from database_access.docCrud import DocumentCRUD
 from database_access.session_factory import SessionFactory
 from database_access.splitCrud import SplitCRUD
 from database_access import splitCrud # Added for reloading
+from database_access import docCrud
 import importlib # Added for reloading
 import logging
 from logging.config import dictConfig
@@ -91,8 +92,8 @@ class MyTestCase(unittest.TestCase):
         query_vector = embeddingEngine.embed_query(test_phrase)
 
         split_crud = SplitCRUD(SessionFactory())
-        vectors = split_crud.get_similar_vectors(query_vector, top_k=max_splits,
-                                                 distance_threshold=distance_threshold)
+        vectors = split_crud.get_similar_splits(query_vector, top_k=max_splits,
+                                                distance_threshold=distance_threshold)
         found_it = False
 
         for vector in vectors:
@@ -124,7 +125,7 @@ class MyTestCase(unittest.TestCase):
 
         # run our semantic search in SplitCrud with the predefined phrase
         split_crud = SplitCRUD(SessionFactory())
-        vectors = split_crud.get_similar_vectors(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        vectors = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
 
         # log the results
         logging.info(f"Found {len(vectors)} similar vectors.")
@@ -135,10 +136,51 @@ class MyTestCase(unittest.TestCase):
             logging.info(f"Split ID: {vector.SplitID}, Doc ID: {vector.DocID}, Split Length: {vector.SplitLength}")
             # log the split content
             split_text = split_crud.get_split_content(vector.SplitID)
-            logging.info(f"Split Content: {split_text}")
+            logging.info(f"Split Content: \n{split_text}")
             logging.info("--------End Vector---------------")
 
         # assert if the one we expect isn't found
+
+    def test_semantic_search_for_expected_results_episode_109(self):  #added on June 27, 2005
+        # prerequisite for this test is to run Analyzer to build all the splits and the vectors
+        test_phrase = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
+        max_splits = int(os.environ.get("MAX_SPLITS"))
+        distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
+
+        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
+        query_vector = embeddingEngine.embed_query(test_phrase)
+
+        # run our semantic search in SplitCrud with the predefined phrase
+        split_crud = SplitCRUD(SessionFactory())
+        similar_splits = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+
+        logging.info(f"We are searching for splits similar to this test_phrase: {test_phrase}\n"
+                     f"")
+        # log the results
+        logging.info(f"Found {len(similar_splits)} similar vectors.")
+        self.assertFalse((len(similar_splits) == 0), f"No similar vectors found for the query: '{test_phrase}'")
+
+        for split in similar_splits:
+            logging.info("--------Begin Split---------------")
+            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosign Similarity: {split.SplitCosignDistance}")
+            # log the split content
+            split_text = split_crud.get_split_content(split.SplitID)
+            logging.info(f"Split Content:\n {split_text}")
+            logging.info("--------End Split---------------")
+
+        # Test that we found what we're looking for.
+        # There should be a split in episode 109 with an exact text match.  If not, something is wrong!
+        docCrud = DocumentCRUD(SessionFactory())
+        target_episode_number = 1009
+        target_docID = docCrud.get_document_by_episode_number(target_episode_number).DocID
+        self.assertFalse(target_docID is None, f"Could not find DocID for episode {target_episode_number}")
+
+        for split in similar_splits:
+            if split.DocID == target_docID:
+                if test_phrase in split.SplitContent:
+                    logging.info(f"Found expected split in DocID {target_docID} with SplitID {split.SplitID}")
+                    return True
+        self.assertFalse(True, f"Did not find expected split in DocID {target_docID} with SplitID {split.SplitID}")
 
     def test_spit_text_functionality(self):
         test_doc_id = 1 # Using existing test DocID

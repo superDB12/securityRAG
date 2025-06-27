@@ -141,7 +141,7 @@ class MyTestCase(unittest.TestCase):
 
         # assert if the one we expect isn't found
 
-    def test_semantic_search_for_expected_results_episode_109(self):  #added on June 27, 2005
+    def test_semantic_search_for_expected_results_episode_1009(self):  #added on June 27, 2005
         # prerequisite for this test is to run Analyzer to build all the splits and the vectors
         test_phrase = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
         max_splits = int(os.environ.get("MAX_SPLITS"))
@@ -179,7 +179,7 @@ class MyTestCase(unittest.TestCase):
             if split.DocID == target_docID:
                 if test_phrase in split.SplitContent:
                     logging.info(f"Found expected split in DocID {target_docID} with SplitID {split.SplitID}")
-                    return True
+                    return
         self.assertFalse(True, f"Did not find expected split in DocID {target_docID} with SplitID {split.SplitID}")
 
     def test_spit_text_functionality(self):

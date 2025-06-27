@@ -37,6 +37,17 @@ assert os.environ.get("DIST_THRESHOLD") is not None, "You have not set DIST_THRE
 
 #TODO: Add metadata for the split documents
 
+from dataclasses import dataclass
+@dataclass
+class GetSimilarVectorQueryResult:
+    SplitID: int
+    DocID: int
+    SplitContent: str
+    SplitStartOffset: int
+    SplitLength: int
+    SplitCosignDistance: float
+
+
 #Add a new table for split documents here or in a new file?
 class SplitDocument(Base):
     __tablename__ = 'split_documents'
@@ -117,7 +128,7 @@ class SplitCRUD:
         return normalized_vector
         # return vector
 
-    def get_similar_vectors(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
+    def get_similar_splits(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
         query_vector_size = len(query_vector)
         # David and John confirmed we do not need to normalize the vectors
         # normalized_query_vector = query_vector
@@ -132,14 +143,24 @@ class SplitCRUD:
         ).order_by(
             SplitDocument.SplitVector.cosine_distance(query_vector)
         ).limit(top_k).all()
-        split_doc_array = []
+
+        get_similar_vector_query_results: list[GetSimilarVectorQueryResult] = []
         for result in results:
+            split_query_result = {}
             logging.info(f"SplitID: {result[0].SplitID}, DocID: {result[0].DocID}, Distance:"
                          f" {result[1]}")
-            logging.info( f"\nNormalized Query:{query_vector}"
-                          f"\nStored Vector...: {result[0].SplitVector}")
-            split_doc_array.append(result[0])
-        return split_doc_array
+            # logging.info( f"\nNormalized Query:{query_vector}"
+            #               f"\nStored Vector...: {result[0].SplitVector}")
+            get_similar_vector_query_result = GetSimilarVectorQueryResult( result[0].SplitID, result[0].DocID, result[0].SplitContent, result[0].SplitStartOffset, result[0].SplitLength, result[1])
+            # split_distance_query_result['SpitID'] = result[0].SplitID
+            # split_distance_query_result['DocID'] = result[0].DocID
+            # split_distance_query_result['SplitContent'] = result[0].SplitContent
+            # split_distance_query_result['SplitStartOffset'] = result[0].SplitStartOffset
+            # split_distance_query_result['SplitLength'] = result[0].SplitLength
+            # split_distance_query_result['SplitCosignDistance'] = result[1]
+            # split_doc_array.append(result[0])
+            get_similar_vector_query_results.append(get_similar_vector_query_result)
+        return get_similar_vector_query_results
 
     #This accomplishes getting the split content without doing a Join
     def get_split_content(self, split_id):

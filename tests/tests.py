@@ -2,11 +2,11 @@ import os
 import unittest
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from database_access.docCrud import DocumentCRUD
 from database_access.session_factory import SessionFactory
 from database_access.splitCrud import SplitCRUD
 from database_access import splitCrud # Added for reloading
-from database_access import docCrud
 import importlib # Added for reloading
 import logging
 from logging.config import dictConfig
@@ -141,9 +141,73 @@ class MyTestCase(unittest.TestCase):
 
         # assert if the one we expect isn't found
 
-    def test_semantic_search_for_expected_results_episode_1009(self):  #added on June 27, 2005
+    def test_semantic_search_for_expected_results_episode_1009(self, query = None):  #added on June 27, 2005
         # prerequisite for this test is to run Analyzer to build all the splits and the vectors
-        test_phrase = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
+        if query is None:
+            test_phrase = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
+        else:
+            test_phrase = query
+
+        max_splits = int(os.environ.get("MAX_SPLITS"))
+        distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
+
+        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
+        query_vector = embeddingEngine.embed_query(test_phrase)
+
+        # run our semantic search in SplitCrud with the predefined phrase
+        split_crud = SplitCRUD(SessionFactory())
+        similar_splits = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+
+        logging.info(f"We are searching for splits similar to this test_phrase: {test_phrase}\n"
+                     f"")
+        # log the results
+        logging.info(f"Found {len(similar_splits)} similar vectors.")
+        self.assertFalse((len(similar_splits) == 0), f"No similar vectors found for the query: '{test_phrase}'")
+
+        for split in similar_splits:
+            logging.info("--------Begin Split---------------")
+            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosign Similarity: {split.SplitCosignDistance}")
+            # log the split content
+            split_text = split_crud.get_split_content(split.SplitID)
+            logging.info(f"Split Content:\n {split_text}")
+            logging.info("--------End Split---------------")
+
+        # Test that we found what we're looking for.
+        # There should be a split in episode 109 with an exact text match.  If not, something is wrong!
+        docCrud = DocumentCRUD(SessionFactory())
+        target_episode_number = 1009
+        target_docID = docCrud.get_document_by_episode_number(target_episode_number).DocID
+        self.assertFalse(target_docID is None, f"Could not find DocID for episode {target_episode_number}")
+
+        for split in similar_splits:
+            if split.DocID == target_docID:
+                if test_phrase in split.SplitContent:
+                    logging.info(f"Found expected split in DocID {target_docID} with SplitID {split.SplitID}")
+                    # return
+        # self.assertFalse(True, f"Did not find expected split in DocID {target_docID} with SplitID {split.SplitID}")
+        return similar_splits
+
+    def test_concept_extractor(self):
+        from retriever.concept_extractor import ConceptExtractor
+        question = "What is the impact of quantum computing on cryptography?"
+        question = "How much wood could a wood chuck if a wood chuck could chuck wood?"
+        expected_concept = "impact of quantum computing on cryptography"
+
+        my_concept_extractor = ConceptExtractor()
+        result = my_concept_extractor.extract_concept(question)
+
+        logging.info(f"Concepts extracted from question: {question} is '{result}'")
+
+        self.assertEqual(result, expected_concept, f"Expected concept '{expected_concept}' but got '{result}'")
+
+
+    def test_semantic_search_for_expected_results_episode_1009(self, query = None):  #added on June 27, 2005
+        # prerequisite for this test is to run Analyzer to build all the splits and the vectors
+        if query is None:
+            test_phrase = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
+        else:
+            test_phrase = query
+
         max_splits = int(os.environ.get("MAX_SPLITS"))
         distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
 
@@ -181,6 +245,52 @@ class MyTestCase(unittest.TestCase):
                     logging.info(f"Found expected split in DocID {target_docID} with SplitID {split.SplitID}")
                     return
         self.assertFalse(True, f"Did not find expected split in DocID {target_docID} with SplitID {split.SplitID}")
+
+    def test_semantic_search_blended_with_concept_extractor(self):
+        from retriever.concept_extractor import ConceptExtractor
+        # question = "What is the impact of quantum computing on cryptography?"
+        # question = "How much wood could a wood chuck if a wood chuck could chuck wood?"
+        question = "One of the earliest and most influential implementations of salted password hashing was introduced with Unix v7 in 1979."
+
+        my_concept_extractor = ConceptExtractor()
+        concept = my_concept_extractor.extract_concept(question)
+
+        logging.info(f"Getting Splits from question: {question}'")
+
+        # splits_based_on_question = self.test_semantic_search_for_expected_results_episode_1009(query=question)
+
+        max_splits = int(os.environ.get("MAX_SPLITS"))
+        distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
+
+        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
+        question_vector = embeddingEngine.embed_query(question)
+        concept_vector = embeddingEngine.embed_query(concept)
+
+        # run our semantic search in SplitCrud with the predefined phrase
+        split_crud = SplitCRUD(SessionFactory())
+
+        logging.info(f"Getting Splits from question: {question}'")
+        splits_based_on_question = split_crud.get_similar_splits(question_vector, top_k=max_splits, distance_threshold=distance_threshold)
+
+
+        logging.info(f"Getting Splits from concept: {concept}'")
+        splits_based_on_concept = split_crud.get_similar_splits(concept_vector, top_k=max_splits, distance_threshold=distance_threshold)
+
+        # logging.info(f"Splits based on question:\n {splits_based_on_question}")
+        # logging.info(f"Splits based on concept:\n {splits_based_on_concept}")
+
+        #compare the two sets of splits assert if they are not the same
+        split_ids_question = set(split.SplitID for split in splits_based_on_question)
+        split_ids_concept = set(split.SplitID for split in splits_based_on_concept)
+
+        logging.info(f"Split IDs based on question: {split_ids_question}")
+        logging.info(f"Split IDs based on concept: {split_ids_concept}")
+
+        self.assertEqual(
+            split_ids_question,
+            split_ids_concept,
+            "Splits based on question and concept should be the same"
+        )
 
     def test_spit_text_functionality(self):
         test_doc_id = 1 # Using existing test DocID

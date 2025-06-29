@@ -12,7 +12,7 @@ if "REGION" not in os.environ:
 if "INSTANCE_NAME" not in os.environ:
     os.environ["INSTANCE_NAME"] = "test-instance"
 
-from analyzer.concept_extractor import ConceptExtractor
+from retriever.concept_extractor import ConceptExtractor
 from langchain_core.messages import AIMessage # For mocking LLM response
 
 
@@ -100,6 +100,14 @@ class TestConceptExtractor(unittest.TestCase):
             self.assertEqual(result, "Error extracting concept")
             self.assertTrue(any("Error during concept extraction LLM call" in message for message in log.output))
 
+    def test_some_user_input(self):
+        question = "What is the impact of quantum computing on cryptography?"
+        expected_concept = "impact of quantum computing on cryptography"
+
+        self.mock_llm.invoke.return_value = AIMessage(content=expected_concept)
+
+        result = self.extractor.extract_concept(question)
+        self.assertEqual(result, expected_concept)
 
 if __name__ == '__main__':
     unittest.main()

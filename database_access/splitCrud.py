@@ -39,7 +39,7 @@ assert os.environ.get("DIST_THRESHOLD") is not None, "You have not set DIST_THRE
 
 from dataclasses import dataclass
 @dataclass
-class GetSimilarVectorQueryResult:
+class SplitWithSimilarityDistance:
     SplitID: int
     DocID: int
     SplitContent: str
@@ -128,7 +128,7 @@ class SplitCRUD:
         return normalized_vector
         # return vector
 
-    def get_similar_splits(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))):
+    def get_similar_splits(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))) -> list[SplitWithSimilarityDistance]:
         query_vector_size = len(query_vector)
         # David and John confirmed we do not need to normalize the vectors
         # normalized_query_vector = query_vector
@@ -144,14 +144,14 @@ class SplitCRUD:
             SplitDocument.SplitVector.cosine_distance(query_vector)
         ).limit(top_k).all()
 
-        get_similar_vector_query_results: list[GetSimilarVectorQueryResult] = []
+        get_similar_vector_query_results: list[SplitWithSimilarityDistance] = []
         for result in results:
             split_query_result = {}
             logging.info(f"SplitID: {result[0].SplitID}, DocID: {result[0].DocID}, Distance:"
                          f" {result[1]}")
             # logging.info( f"\nNormalized Query:{query_vector}"
             #               f"\nStored Vector...: {result[0].SplitVector}")
-            get_similar_vector_query_result = GetSimilarVectorQueryResult( result[0].SplitID, result[0].DocID, result[0].SplitContent, result[0].SplitStartOffset, result[0].SplitLength, result[1])
+            get_similar_vector_query_result = SplitWithSimilarityDistance(result[0].SplitID, result[0].DocID, result[0].SplitContent, result[0].SplitStartOffset, result[0].SplitLength, result[1])
             # split_distance_query_result['SpitID'] = result[0].SplitID
             # split_distance_query_result['DocID'] = result[0].DocID
             # split_distance_query_result['SplitContent'] = result[0].SplitContent

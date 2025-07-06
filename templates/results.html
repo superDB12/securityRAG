@@ -1,33 +1,44 @@
-<!DOCTYPE html>
-<html lang="en" xmlns="http://www.w3.org/1999/html">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security RAG</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+<form action="/results" method="post">
+
     <h1>Security RAG Query</h1>
 
-        <h2>Query:</h2>
-        <p>{{ query }}</p>
-        <h2>Response:</h2>
-        <p>{{ result }}</p>
+    <h2>Query:</h2>
+    <p>{{ result.Query }}</p>
+    <h2>Query Response:</h2>
+    <p>{{ result.QueryResponse }}</p>
 
-    <h2>Feedback:</h2>
-    <form action="/results" method="post">
-        <input type="hidden" name="query" value="{{ query }}"></input>
-        <input type="hidden" name="response" value="{{ result }}"></input>
-        <select for="score" name="score" required>
-            <option value="1">WTF</option>
-            <option value="2">Bad</option>
-            <option value="3">Ok</option>
-            <option value="4">Good</option>
-            <option value="5">Great</option>
-        <textarea type="text" id="comments" name="comments" required> </textarea>
-        <button type="submit">Submit</button>
-        </select>
-    </form>
-    <button onclick="window.location.href='/query'">Reload</button>
-</body>
-</html>
+    <select id="query_score" name="query_score" required>
+        <option value="1">WTF</option>
+        <option value="2">Bad</option>
+        <option value="3">Ok</option>
+        <option value="4">Good</option>
+        <option value="5">Great</option>
+    </select>
+    <label for="query_score">Comments:</label>
+
+    <textarea id="query_score_comments" name="query_score_comments" required></textarea>
+
+    <h2>Concept</h2>
+    <p>{{ result.QueryConcept }}</p>
+    <h2>Concept Response</h2>
+    <p>{{ result.QueryConceptResponse }}</p>
+
+    <select id="concept_score" name="concept_score" required>
+        <option value="1">WTF</option>
+        <option value="2">Bad</option>
+        <option value="3">Ok</option>
+        <option value="4">Good</option>
+        <option value="5">Great</option>
+    </select>
+    <label for="concept_score">Comments:</label>
+
+    <textarea id="concept_score_comments" name="concept_score_comments" required></textarea>
+
+    <input type="hidden" name="user_query" value="{{ result.Query }}">
+    <input type="hidden" name="query_response" value="{{ result.QueryResponse }}">
+    <input type="hidden" name="query_concept" value="{{ result.QueryConcept }}">
+    <input type="hidden" name="query_concept_response" value="{{ result.QueryConceptResponse }}">
+
+    <br/>
+    <button type="submit">Save Scores</button>
+</form>

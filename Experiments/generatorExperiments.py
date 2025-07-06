@@ -64,7 +64,39 @@ class Generator:
         #     prompt_template.format(query_text=query_text, splits_text=splits_text))
         # self.request_response.add_request_and_response_log(query_text, response.content,
         #                                                    date=datetime.now())
-        return response
+        return response.content
+
+        # return response.content  # Assuming response is a string, if it's an object,
+
+    def generate_response_from_query_and_concept(self, user_query:str, concept:str) -> str:
+        # Search for similar splits
+        similar_splits = self.doc_searcher.search_similar_splits(concept)
+
+        # Prepare the prompt with the query and similar splits
+        splits_text = "\n".join([self.split_crud.get_split_content(split.SplitID) for split in
+                                                                   similar_splits])
+        prompt = (f"Query: {user_query}\n\nRelevant Information:\n{splits_text}\n\nAnswer the "
+                  f"query based on the relevant information provided. Say that the information is not available if you are not able to find suitable response")
+
+        # Create a LangChain prompt template
+        prompt_template = PromptTemplate(template=prompt,
+                                         input_variables=["user_query", "splits_text"])
+
+        # Create a LangChain LLMChain
+        # LLMChain is deprecated, unsure how to properly use the new API
+        # llm_chain = LLMChain(llm=self.llm, prompt=prompt_template)
+        sequence = RunnableSequence(prompt_template | self.llm)
+
+        # Get the response from the LLM
+        # .run is deprecated, directed to use .invoke instead but .invoke just brings back the
+        # text, it is not interpreted in any way
+        # response = llm_chain.run({"query_text": query_text, "splits_text": splits_text})
+        response = sequence.invoke({"user_query": user_query, "splits_text": splits_text})
+        # response = runnable.invoke(
+        #     prompt_template.format(query_text=query_text, splits_text=splits_text))
+        # self.request_response.add_request_and_response_log(query_text, response.content,
+        #                                                    date=datetime.now())
+        return response.content
 
 
 if __name__ == "__main__":

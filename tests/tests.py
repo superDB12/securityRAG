@@ -92,8 +92,8 @@ class MyTestCase(unittest.TestCase):
         query_vector = embeddingEngine.embed_query(test_phrase)
 
         split_crud = SplitCRUD(SessionFactory())
-        vectors = split_crud.get_similar_splits(query_vector, top_k=max_splits,
-                                                distance_threshold=distance_threshold)
+        vectors = split_crud.get_similar_splits_from_vector(query_vector, top_k=max_splits,
+                                                            distance_threshold=distance_threshold)
         found_it = False
 
         for vector in vectors:
@@ -125,7 +125,7 @@ class MyTestCase(unittest.TestCase):
 
         # run our semantic search in SplitCrud with the predefined phrase
         split_crud = SplitCRUD(SessionFactory())
-        vectors = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        vectors = split_crud.get_similar_splits_from_vector(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
 
         # log the results
         logging.info(f"Found {len(vectors)} similar vectors.")
@@ -156,7 +156,7 @@ class MyTestCase(unittest.TestCase):
 
         # run our semantic search in SplitCrud with the predefined phrase
         split_crud = SplitCRUD(SessionFactory())
-        similar_splits = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        similar_splits = split_crud.get_similar_splits_from_vector(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
 
         logging.info(f"We are searching for splits similar to this test_phrase: {test_phrase}\n"
                      f"")
@@ -216,7 +216,7 @@ class MyTestCase(unittest.TestCase):
 
         # run our semantic search in SplitCrud with the predefined phrase
         split_crud = SplitCRUD(SessionFactory())
-        similar_splits = split_crud.get_similar_splits(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        similar_splits = split_crud.get_similar_splits_from_vector(query_vector, top_k=max_splits, distance_threshold=distance_threshold)
 
         logging.info(f"We are searching for splits similar to this test_phrase: {test_phrase}\n"
                      f"")
@@ -262,19 +262,15 @@ class MyTestCase(unittest.TestCase):
         max_splits = int(os.environ.get("MAX_SPLITS"))
         distance_threshold = float(os.environ.get("DIST_THRESHOLD"))
 
-        embeddingEngine = OpenAIEmbeddings(model="text-embedding-3-large")
-        question_vector = embeddingEngine.embed_query(question)
-        concept_vector = embeddingEngine.embed_query(concept)
-
         # run our semantic search in SplitCrud with the predefined phrase
         split_crud = SplitCRUD(SessionFactory())
 
         logging.info(f"Getting Splits from question: {question}'")
-        splits_based_on_question = split_crud.get_similar_splits(question_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        splits_based_on_question = split_crud.get_similar_splits_from_string(question, top_k=max_splits, distance_threshold=distance_threshold)
 
 
         logging.info(f"Getting Splits from concept: {concept}'")
-        splits_based_on_concept = split_crud.get_similar_splits(concept_vector, top_k=max_splits, distance_threshold=distance_threshold)
+        splits_based_on_concept = split_crud.get_similar_splits_from_string(concept, top_k=max_splits, distance_threshold=distance_threshold)
 
         # logging.info(f"Splits based on question:\n {splits_based_on_question}")
         # logging.info(f"Splits based on concept:\n {splits_based_on_concept}")

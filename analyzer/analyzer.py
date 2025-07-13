@@ -46,29 +46,32 @@ class DocumentAnalyzer:
 
         for doc in documents:
             if doc.DocContent is not None and doc.EpisodeAirDate is not None and not doc.Processed:
-                logging.info(f'Printing length of doc: {len(doc.DocContent)}')
+                # logging.info(f'Printing length of doc: {len(doc.DocContent)}')
                 split_start_offset = 0
                 episode_number = doc.EpisodeNumber
                 episode_title = doc.EpisodeTitle
                 episode_date = doc.EpisodeAirDate
-                # episode_metadata= (f"Episode Number: {episode_number}, Episode Title: "
-                #                    f"{episode_title}, Episode Date: {episode_date} : ")
-                episode_metadata = ''
+                episode_metadata= (f"Episode Number: {episode_number}, Episode Title: "
+                                   f"{episode_title}, Episode Date: {episode_date} : ")
+                # episode_metadata = ''
                 splits = text_splitter.split_text(doc.DocContent)
                 for split in splits:
-                    vector = self.embeddings.embed_query(episode_metadata + split)
-                    # David and John found that embedding the metadata may throw off the symantec meaning.
-                    # We also confirmed that we don't need to normalize the vectors.
-                    # vector = self.embeddings.embed_query(episode_metadata + split)
-                    # normalized_vector = self.split_crud.normalize_split_vectors(vector)
-                    #TODO: ensure that the metadata is actually being appended to the split content
                     logging.info(f"Episode metadata: {episode_metadata}")
                     logging.info(f"Split content: {split}")
-                    logging.info(f"Generated vector of length {len(vector)} for split")
-
-                    self.split_crud.add_split_document(doc.DocID, split_start_offset, len(split),
+                    if not self.split_crud.does_split_exist(doc.DocID, split_start_offset):
+                        logging.info(f"Generating vector for split")
+                        vector = self.embeddings.embed_query(split)
+                        # David and John found that embedding the metadata may throw off the symantec meaning.
+                        # We also confirmed that we don't need to normalize the vectors.
+                        # vector = self.embeddings.embed_query(episode_metadata + split)
+                        # normalized_vector = self.split_crud.normalize_split_vectors(vector)
+                        logging.info(f"Generated vector of length {len(vector)} for split")
+                        logging.info(f"Adding split document for DocID {doc.DocID}")
+                        self.split_crud.add_split_document(doc.DocID, split_start_offset, len(split),
                                                        vector, SplitContent=split)
-                    logging.info(f"Added split document for DocID {doc.DocID}")
+                    else:
+                        logging.info(f"Split already exists for DocID {doc.DocID} at offset {split_start_offset}, skipping embedding and insertion into DB.")
+
                     logging.info(f"Split start offset: {split_start_offset}, split length: {len(split)}")
                     split_start_offset = split_start_offset + len(split)
                 self.doc_crud.update_document(doc.DocID, processed=True)

@@ -171,6 +171,15 @@ class SplitCRUD:
             get_similar_vector_query_results.append(get_similar_vector_query_result)
         return get_similar_vector_query_results
 
+    def does_split_exist(self, doc_id, split_start_offset):
+        """
+        Check if a split document exists for the given doc_id and split_start_offset.
+        """
+        return self.session.query(SplitDocument).filter(
+            SplitDocument.DocID == doc_id,
+            SplitDocument.SplitStartOffset == split_start_offset
+        ).first() is not None
+
     #This accomplishes getting the split content without doing a Join
     def get_split_content(self, split_id):
         # split = self.get_one_split(split_id)

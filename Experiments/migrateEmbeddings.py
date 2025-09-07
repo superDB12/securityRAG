@@ -8,7 +8,21 @@ from database_access.splitCrud import SplitCRUD
 from database_access.embeddingsCrud import EmbeddingsCRUD
 from utils.secret_manager import get_secret
 
-
+# SQL Statement to replace the code below
+# INSERT INTO
+#   "embeddings" ("SplitID",
+#     "DocID",
+#     "Embedding",
+#     "EmbeddingModel")
+# SELECT
+#   "s"."SplitID",
+#   "s"."DocID",
+#   "s"."SplitVector",
+#   'openai-text-embedding-3-large'
+# FROM
+#   "split_documents" AS "s"
+# WHERE
+#   "s"."SplitVector" IS NOT NULL;
 def migrateEmbeddings():
     sessionFactory = SessionFactory()
     split_crud = SplitCRUD(sessionFactory)
@@ -30,3 +44,15 @@ if __name__ == "__main__":
     logging.info("Starting embedding migration...")
     migrateEmbeddings()
     logging.info("Embedding migration finished")
+
+
+# Here are a few more handy sql queries for the embeddings table
+# SELECT count(*) FROM
+#   "public"."embeddings";
+#
+# SELECT * FROM
+#   "public"."embeddings" LIMIT 1000;
+#
+# Drop table embeddings;
+#
+# DELETE from "public"."embeddings" where "SplitID" >0;

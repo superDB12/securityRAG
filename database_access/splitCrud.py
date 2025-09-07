@@ -135,6 +135,7 @@ class SplitCRUD:
         query_vector = embeddings.embed_query(query_string)
         logging.info(f'Running get_similar_splits_from_string with query: {query_string}')
         result = self.get_similar_splits_from_vector(query_vector, top_k, distance_threshold)
+        logging.info(f'Found {len(result)} similar splits for query: {query_string}')
         return result
 
     def get_similar_splits_from_vector(self, query_vector, top_k=(int(os.environ.get("MAX_SPLITS"))), distance_threshold=float(os.environ.get("DIST_THRESHOLD"))) -> list[SplitWithSimilarityDistance]:

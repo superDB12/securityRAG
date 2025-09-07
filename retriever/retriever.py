@@ -19,6 +19,7 @@ class DocumentSearcher:
         embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         query_vector = embeddings.embed_query(query_text)
         similar_splits = self.split_crud.get_similar_splits_from_vector(query_vector)
+        logging.info(f"Found {len(similar_splits)} similar splits for query: {query_text}")
         for split in similar_splits:
             logging.info(f"DocID: {split.DocID} SplitID: {split.SplitID}" )
             logging.info(f"Split content: {self.split_crud.get_split_content(split.SplitID)}")

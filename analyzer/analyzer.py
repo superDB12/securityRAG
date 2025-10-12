@@ -91,7 +91,6 @@ class DocumentAnalyzer:
                             doc.DocID,
                             split_start_offset,
                             len(split),
-                            vector,
                             SplitContent=split
                         )
                         try:

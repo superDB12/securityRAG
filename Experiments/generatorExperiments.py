@@ -38,7 +38,7 @@ class Generator:
 
     def generate_response(self, query_text):
         # Search for similar splits
-        similar_splits = self.doc_searcher.search_similar_splits(query_text)
+        similar_splits = self.doc_searcher.search_similar_splits_using_OpenAI(query_text)
 
         # Prepare the prompt with the query and similar splits
         splits_text = "\n".join([self.split_crud.get_split_content(split.SplitID) for split in
@@ -70,7 +70,7 @@ class Generator:
 
     def generate_response_from_query_and_concept(self, user_query:str, concept:str) -> str:
         # Search for similar splits
-        similar_splits = self.doc_searcher.search_similar_splits(concept)
+        similar_splits = self.doc_searcher.search_similar_splits_using_OpenAI(concept)
 
         # Prepare the prompt with the query and similar splits
         splits_text = "\n".join([self.split_crud.get_split_content(split.SplitID) for split in

@@ -31,7 +31,7 @@ class Generator:
         self.llm = init_chat_model("gpt-4o-mini", model_provider="openai")
 
     def retrieve(self, state: State):
-        retrieved_docs = self.doc_searcher.search_similar_splits(state["question"])
+        retrieved_docs = self.doc_searcher.search_similar_splits_using_OpenAI(state["question"])
         return {"context": retrieved_docs}
 
     def generate(self, state:State):

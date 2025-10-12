@@ -14,6 +14,10 @@ from .session_factory import Base
 
 import logging
 from logging.config import dictConfig
+from typing import Optional
+
+
+
 dictConfig({
     'version': 1,
     'formatters': {'default': {
@@ -75,7 +79,7 @@ class SplitCRUD:
 
 #TODO optimize to use offsets and only store the content in the documents table
     def add_split_document(self, doc_id, split_start_offset, split_length,
-                           split_vector, SplitContent=None):
+                           split_vector, SplitContent=None) -> Optional[int]:
         existing_split = self.session.query(SplitDocument).filter(
             SplitDocument.DocID == doc_id,
             SplitDocument.SplitStartOffset == split_start_offset
@@ -91,11 +95,20 @@ class SplitCRUD:
             if DEBUG_SPLIT_CONTENT_ENABLED and SplitContent is not None:
                 split_doc_args["SplitContent"] = SplitContent
 
-            new_split_doc: SplitDocument = SplitDocument(**split_doc_args)
-            self.session.add(new_split_doc)
-            self.session.commit()
+            try:
+                new_split_doc: SplitDocument = SplitDocument(**split_doc_args)
+                self.session.add(new_split_doc)
+                self.session.flush()  # Ensures SplitID is populated
+                split_id = new_split_doc.SplitID
+                self.session.commit()
+                return split_id
+            except Exception:
+                self.session.rollback()
+                logging.exception("Failed to insert split document.")
+                raise
         else:
             logging.info(f"Duplicate split found for DocID {doc_id}, skipping insertion.")
+            return None
 
     def update_split_document(self, split_id, doc_id=None, doc_content=None,  split_start_offset=None, split_length=None, vector_stored=None):
         split = self.session.query(SplitDocument).filter(SplitDocument.SplitID == split_id).first()

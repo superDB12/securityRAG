@@ -40,13 +40,16 @@ class SessionFactory:
             logging.error("INSTANCE_NAME environment variable not set.")
             raise ValueError("INSTANCE_NAME environment variable not set.")
 
-        try:
-            DATABASE_NAME = get_secret(PROJECT_ID, 'DATABASE_NAME')
-            DB_USERNAME = get_secret(PROJECT_ID, 'DB_USERNAME') # Changed from USERNAME to DB_USERNAME
-            DB_PASSWORD = get_secret(PROJECT_ID, 'DB_PASSWORD') # Changed from PASSWORD to DB_PASSWORD
-        except Exception as ex:
-            logging.error(f'Failed to retrieve secrets from Google Secret Manager: {ex}')
-            raise ex
+        # try:
+        #     DATABASE_NAME = get_secret(PROJECT_ID, 'DATABASE_NAME')
+        #     DB_USERNAME = get_secret(PROJECT_ID, 'DB_USERNAME') # Changed from USERNAME to DB_USERNAME
+        #     DB_PASSWORD = get_secret(PROJECT_ID, 'DB_PASSWORD') # Changed from PASSWORD to DB_PASSWORD
+        # except Exception as ex:
+        #     logging.error(f'Failed to retrieve secrets from Google Secret Manager: {ex}')
+        #     raise ex
+        DATABASE_NAME = os.getenv('DATABASE_NAME')
+        DB_USERNAME = os.getenv('DB_USERNAME')
+        DB_PASSWORD = os.getenv('DB_PASSWORD')
 
         connector = Connector(IPTypes.PUBLIC)
         instance_connection_name = f'{PROJECT_ID}:{REGION}:{INSTANCE_NAME}'

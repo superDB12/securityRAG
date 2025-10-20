@@ -62,81 +62,43 @@ class DocumentAnalyzer:
                 for split in splits:
                     logging.info(f"Episode metadata: {episode_metadata}")
                     logging.info(f"Split content: {split}")
+
+                    # do NOT assume splits are continuous.  Find the start offset of the split in the original document
+                    actual_split_start_offset = doc.DocContent.find(split)
+                    if actual_split_start_offset == -1:
+                        assert False, "Could not find split in original document content"
+                    else:
+                        split_start_offset = actual_split_start_offset
+
                     if not self.split_crud.does_split_exist(doc.DocID, split_start_offset):
-                        logging.info(f"Generating vector for split")
-                        vector = self.embeddings.embed_query(split)
-                        sbert_vector = self.sbert_model.encode(split).tolist()
-                        # Pad SBERT (384-dim) to 3072-dim to match the embeddings table schema
-                        if isinstance(sbert_vector, list):
-                            sbert_len = len(sbert_vector)
-                        else:
-                            try:
-                                sbert_len = len(sbert_vector)
-                            except Exception:
-                                sbert_len = 0
-                        if sbert_len < 3072:
-                            sbert_vector_padded = sbert_vector + [0.0] * (3072 - sbert_len)
-                        elif sbert_len == 3072:
-                            sbert_vector_padded = sbert_vector
-                        else:
-                            logging.warning(f"SBERT vector length {sbert_len} exceeds table dimension 3072; truncating.")
-                            sbert_vector_padded = sbert_vector[:3072]
-                        # David and John found that embedding the metadata may throw off the symantec meaning.
-                        # We also confirmed that we don't need to normalize the vectors.
-                        # vector = self.embeddings.embed_query(episode_metadata + split)
-                        # normalized_vector = self.split_crud.normalize_split_vectors(vector)
-                        logging.info(f"Generated vector of length {len(vector)} for split")
-                        logging.info(f"Adding split document for DocID {doc.DocID}")
+                        # add the new split to the database
                         new_split_id = self.split_crud.add_split_document(
                             doc.DocID,
                             split_start_offset,
                             len(split),
                             SplitContent=split
                         )
+
+                        # Verify that the split content stored matches the original split - prevents nasty bug that's hard to find later
+                        split_content_from_offset = self.split_crud.get_split_content(new_split_id)
+                        split_content = split
+                        if split_content != split_content_from_offset:
+                            assert False, f"Mismatch in split content for SplitID {new_split_id}
+
                         try:
                             # Store OpenAI embedding alongside SBERT in the embeddings table
                             if new_split_id is not None:
                                 self.embeddings_crud.add_embedding(
                                     split_id=new_split_id,
                                     doc_id=doc.DocID,
-                                    embedding=vector,
-                                    embedding_model="OpenAI"
-                                )
-                                self.embeddings_crud.add_embedding(
-                                    split_id=new_split_id,
-                                    doc_id=doc.DocID,
-                                    embedding=sbert_vector_padded,
-                                    embedding_model="sBert"
+                                    split_text=split
                                 )
                             else:
                                 logging.warning("add_split_document did not return a SplitID; skipping EmbeddingsCRUD storage for this split.")
                         except Exception as e:
                             logging.error(f"Failed to store embeddings in embeddings table: {e}")
-                    else:
-                        logging.info(f"Split already exists for DocID {doc.DocID} at offset {split_start_offset}, skipping embedding and insertion into DB.")
-                        try:
-                            # If your SplitCRUD exposes a way to fetch the split id by (DocID, offset), use it here.
-                            if hasattr(self.split_crud, "get_split_id_by_doc_and_offset"):
-                                existing_split_id = self.split_crud.get_split_id_by_doc_and_offset(doc.DocID, split_start_offset)
-                                if existing_split_id is not None:
-                                    self.embeddings_crud.add_embedding(
-                                        split_id=existing_split_id,
-                                        doc_id=doc.DocID,
-                                        embedding=vector,
-                                        embedding_model="OpenAI"
-                                    )
-                                    self.embeddings_crud.add_embedding(
-                                        split_id=existing_split_id,
-                                        doc_id=doc.DocID,
-                                        embedding=sbert_vector_padded,
-                                        embedding_model="sBert"
-                                    )
-                                else:
-                                    logging.warning("Could not resolve existing SplitID; skipping EmbeddingsCRUD storage for this split.")
-                            else:
-                                logging.warning("SplitCRUD.get_split_id_by_doc_and_offset not available; cannot store embeddings for existing split.")
-                        except Exception as e:
-                            logging.error(f"Failed to store embeddings for existing split: {e}")
+                    else:  # Split already exists
+                        logging.warning(f"Split already exists for DocID {doc.DocID} at offset {split_start_offset}, update the split and the embeddings")
 
                     logging.info(f"Split start offset: {split_start_offset}, split length: {len(split)}")
                     split_start_offset = split_start_offset + len(split)

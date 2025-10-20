@@ -101,11 +101,23 @@ class SplitCRUD:
                 self.session.flush()  # Ensures SplitID is populated
                 split_id = new_split_doc.SplitID
                 self.session.commit()
+
+                # # add the embeddings
+                # from database_access.embeddingsCrud import Embeddings
+                #
+                # embeddings_crud = Embeddings(self.session)
+                # embeddings_crud.add_embedding(
+                #     split_id=split_id,
+                #     doc_id=doc_id,
+                #     embedding=None,
+                #     embedding_model="OpenAI"
+                # )
                 return split_id
             except Exception:
                 self.session.rollback()
                 logging.exception("Failed to insert split document.")
                 raise
+
         else:
             logging.info(f"Duplicate split found for DocID {doc_id}, skipping insertion.")
             return None

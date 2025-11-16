@@ -57,10 +57,10 @@ class EmbeddingsCRUD:
         SBERTEmbedding= calculate_SBERT_embedding(split_text)
         new_embedding = Embeddings(SplitID=split_id,
                                    DocID=doc_id,
-                                   Embedding=None,   # deprecating this colum and moving to separate embedding columns
+                                   # Embedding=None,   # deprecating this colum and moving to separate embedding columns
                                    OpenAIEmbedding=OpenAIEmbedding,
                                    SBERTEmbedding=SBERTEmbedding,
-                                   EmbeddingModel = None # deprecating this column and moving to separate embedding columns
+                                   # EmbeddingModel = None # deprecating this column and moving to separate embedding columns
         )
         self.session.add(new_embedding)
         self.session.commit()

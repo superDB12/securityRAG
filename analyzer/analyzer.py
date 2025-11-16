@@ -83,7 +83,7 @@ class DocumentAnalyzer:
                         split_content_from_offset = self.split_crud.get_split_content(new_split_id)
                         split_content = split
                         if split_content != split_content_from_offset:
-                            assert False, f"Mismatch in split content for SplitID {new_split_id}
+                            assert False, f"Mismatch in split content for SplitID {new_split_id}"
 
                         try:
                             # Store OpenAI embedding alongside SBERT in the embeddings table
@@ -97,6 +97,7 @@ class DocumentAnalyzer:
                                 logging.warning("add_split_document did not return a SplitID; skipping EmbeddingsCRUD storage for this split.")
                         except Exception as e:
                             logging.error(f"Failed to store embeddings in embeddings table: {e}")
+                            assert False, f"Failed to store embeddings in embeddings table: {e}"
                     else:  # Split already exists
                         logging.warning(f"Split already exists for DocID {doc.DocID} at offset {split_start_offset}, update the split and the embeddings")
 

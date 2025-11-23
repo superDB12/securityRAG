@@ -16,10 +16,10 @@ class DocumentSearcher:
     def __init__(self):
         self.split_crud = SplitCRUD(SessionFactory())
 
-    def search_similar_splits_using_OpenAI(self, query_text):
+    def search_similar_splits_using_OpenAI(self, query_text) -> list:
         # embeddings = OpenAIEmbeddings(model="text-embedding-3-large")
         # query_vector = embeddings.embed_query(query_text)
-        query_vector = embeddingsCrud.calculate_OpenAI_embedding(query_text)
+        query_vector = embeddingsCrud.calculate_openAI_embedding(query_text)
         similar_splits = self.split_crud.get_similar_splits_from_embeddings(query_vector, embedding_model='OpenAI')
         logging.info(f"Found {len(similar_splits)} similar splits for query: {query_text}")
         for split in similar_splits:
@@ -28,7 +28,7 @@ class DocumentSearcher:
         # Should we return the query_text or vector here also?
         return similar_splits
 
-    def search_similar_splits_using_SBERT(self, query_text):
+    def search_similar_splits_using_SBERT(self, query_text) -> list:
         # model = SentenceTransformer("all-MiniLM-L6-v2")
         # query_vector = model.encode(query_text).tolist()
         # # pad to 3072 dims to match stored SBERT vectors

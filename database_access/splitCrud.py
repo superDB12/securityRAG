@@ -170,21 +170,36 @@ class SplitCRUD:
         """Generic similarity search over the embeddings table for the given EmbeddingModel (e.g., 'OpenAI' or 'sBert')."""
         qsize = len(query_vector)
         logging.info(f"Running embeddings-table similarity search (model={embedding_model}) with {qsize}-dim vector; top_k={top_k}; threshold={distance_threshold}")
-        results = (
-            self.session.query(
-                SplitDocument,
-                Embeddings.Embedding.cosine_distance(query_vector).label('distance')
+        if embedding_model == 'sBert':
+            results = (
+                self.session.query(
+                    SplitDocument,
+                    Embeddings.SBERTEmbedding.cosine_distance(query_vector).label('distance')
+                )
+                .join(Embeddings, Embeddings.SplitID == SplitDocument.SplitID)
+                .filter(
+                    #Embeddings.EmbeddingModel == embedding_model,
+                    Embeddings.SBERTEmbedding.cosine_distance(query_vector) < distance_threshold
+                )
+                .order_by(Embeddings.SBERTEmbedding.cosine_distance(query_vector))
+                .limit(top_k)
+                .all()
             )
-            .join(Embeddings, Embeddings.SplitID == SplitDocument.SplitID)
-            .filter(
-                Embeddings.EmbeddingModel == embedding_model,
-                Embeddings.Embedding.cosine_distance(query_vector) < distance_threshold
+        else:  # Default to OpenAI
+            results = (
+                self.session.query(
+                    SplitDocument,
+                    Embeddings.OpenAIEmbedding.cosine_distance(query_vector).label('distance')
+                )
+                .join(Embeddings, Embeddings.SplitID == SplitDocument.SplitID)
+                .filter(
+                    # Embeddings.EmbeddingModel == embedding_model,
+                    Embeddings.OpenAIEmbedding.cosine_distance(query_vector) < distance_threshold
+                )
+                .order_by(Embeddings.OpenAIEmbedding.cosine_distance(query_vector))
+                .limit(top_k)
+                .all()
             )
-            .order_by(Embeddings.Embedding.cosine_distance(query_vector))
-            .limit(top_k)
-            .all()
-        )
-
         out: list[SplitWithSimilarityDistance] = []
         for split_doc, dist in results:
             logging.info(f"[Embeddings:{embedding_model}] SplitID={split_doc.SplitID} DocID={split_doc.DocID} Distance={dist}")

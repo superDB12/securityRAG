@@ -26,7 +26,7 @@ class MyTestCase(unittest.TestCase):
     # python
     def test_read_user_query_file(self):
         cwd= os.getcwd()
-        file_path = cwd + '/tests/test_data/user_queries.txt'
+        file_path = cwd + '/test_data/user_queries.txt'
         print(file_path)
         lines = []
         with open(file_path, 'r', encoding='utf-8') as file:
@@ -45,11 +45,54 @@ class MyTestCase(unittest.TestCase):
             # make the cosign similarity queries
             sbert_splits = self.document_searcher.search_similar_splits_using_SBERT(line)
             openai_splits = self.document_searcher.search_similar_splits_using_OpenAI(line)
-            for sbert_split in sbert_splits:
-                print(sbert_split.SplitID)
+            # for sbert_split in sbert_splits:
+                # print(sbert_split.SplitID)
 
-            for openai_split in openai_splits:
-                print(openai_split.SplitID)
+            # for openai_split in openai_splits:
+                # print(openai_split.SplitID)
+
+            self.show_cossimilarityd_scores(sbert_splits, openai_splits)
+
+            print("----")
+            self.compare_embedding_lists(sbert_splits, openai_splits)
+
+    #         TODO: hand these results back to Open Ai to generate an answer and compare
+    #          qualitatively.  Does having more splits create a more accurate answer?  Which has
+    #          better density of information- is the detail equal?  How do we score the density
+    #          of technical information in the answer?
+
+    def show_cossimilarityd_scores(self, SBERTList, OpenAIList):
+        print("list of SBERT cosine similarity scores:")
+        for sbert_item in SBERTList:
+            print("sbert_item SplitID:", sbert_item.SplitID, "sbert_item CosineSimilarity:",
+                  sbert_item.SplitCosignDistance)
+
+        print("list of OpenAI cosine similarity scores:")
+        for openai_item in OpenAIList:
+            print("openai_item SplitID:", openai_item.SplitID, "openai_item CosineSimilarity:",
+                  openai_item.SplitCosignDistance)
+
+    def compare_embedding_lists(self, SBERTList, OpenAIList):
+        """Compare two lists of embeddings and return similarity score."""
+        if len(SBERTList) == len(OpenAIList):
+            print("Lists are of equal length.")
+        set1 = {item.SplitID for item in SBERTList}
+        set2 = {item.SplitID for item in OpenAIList}
+
+        unique_items_in_SBERT = set1 - set2
+        unique_items_in_OpenAI = set2 - set1
+
+        print("Values unique to SBERT:", unique_items_in_SBERT)
+        for item in SBERTList:
+            if item.SplitID in unique_items_in_SBERT:
+                print(item)
+
+        print("Values unique to OpenAI:", unique_items_in_OpenAI)
+        for item in OpenAIList:
+            if item.SplitID in unique_items_in_OpenAI:
+                print(item)
+
+
 
 if __name__ == '__main__':
     unittest.main()

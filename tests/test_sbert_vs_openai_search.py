@@ -125,7 +125,7 @@ class MyTestCase(unittest.TestCase):
             file.write("<!DOCTYPE html>\n<html>\n<body>\n")
             file.write(f'<h1>Results for query: {test_query}</h1>\n')
             file.write('<table border="1">\n')
-            file.write('<tr><th width=50%>SBert</th><th width=50%>OpenAI</th></tr>\n')
+            file.write(f'<tr><th width=50%>SBert ({len(SBERTList)} splits)</th><th width=50%>OpenAI ({len(OpenAIList)} splits</th></tr>\n')
 
             SBERTList.sort(key=lambda item: getattr(item, "SplitID", float("inf")))
             OpenAIList.sort(key=lambda item: getattr(item, "SplitID", float("inf")))

@@ -166,7 +166,7 @@ class MyTestCase(unittest.TestCase):
 
         for split in similar_splits:
             logging.info("--------Begin Split---------------")
-            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosign Similarity: {split.SplitCosignDistance}")
+            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosine Similarity: {split.SplitCosineDistance}")
             # log the split content
             split_text = split_crud.get_split_content(split.SplitID)
             logging.info(f"Split Content:\n {split_text}")
@@ -226,7 +226,7 @@ class MyTestCase(unittest.TestCase):
 
         for split in similar_splits:
             logging.info("--------Begin Split---------------")
-            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosign Similarity: {split.SplitCosignDistance}")
+            logging.info(f"Split ID: {split.SplitID}, Doc ID: {split.DocID}, Split Cosine Similarity: {split.SplitCosineDistance}")
             # log the split content
             split_text = split_crud.get_split_content(split.SplitID)
             logging.info(f"Split Content:\n {split_text}")

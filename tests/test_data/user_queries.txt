@@ -1,2 +1,9 @@
 Tell me about salt typhoon
 Tell me about Microsoft patch tuesday
+Discuss Passkeys and it the history of its development and use
+Tell me about telephone number spoofing
+Discuss malware targeting Cisco routers
+Explain DNS Cache Poisoning
+Tell me about row hammer has evolved over time
+tell me about sharepoint vunerabilities
+Tell me developments in SSL Certificate issuance and revocation over time

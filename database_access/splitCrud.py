@@ -51,7 +51,7 @@ class SplitWithSimilarityDistance:
     SplitContent: str
     SplitStartOffset: int
     SplitLength: int
-    SplitCosignDistance: float
+    SplitCosineDistance: float
 
 
 #Add a new table for split documents here or in a new file?

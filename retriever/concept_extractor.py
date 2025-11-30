@@ -69,7 +69,7 @@ Core Concept:"""
         prompt = prompt_template_str.format(user_question=user_question)
 
         # Invoke the LLM. Assuming the LLM object can be called directly or has an invoke method.
-        # Based on generatorExperiments.py, it seems like `llm.invoke()` is the way.
+        # Based on generator.py, it seems like `llm.invoke()` is the way.
         # The response from llm.invoke is typically a message object (e.g., AIMessage)
         # and we need to access its content.
         try:

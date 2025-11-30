@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from flask import Flask, request, render_template, redirect, url_for
-from Experiments.generatorExperiments import Generator
+from generator.generator import Generator
 from logging.config import dictConfig
 from database_access.requestAndResponseLogCRUD import RequestAndResponseLogCRUD
 from database_access.session_factory import SessionFactory

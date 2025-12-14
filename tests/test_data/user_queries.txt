@@ -7,3 +7,4 @@ Explain DNS Cache Poisoning
 Tell me about row hammer has evolved over time
 tell me about sharepoint vunerabilities
 Tell me developments in SSL Certificate issuance and revocation over time
+What strategies are good to use to protect against SQL injection attacks

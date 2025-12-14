@@ -21,6 +21,7 @@ from database_access.splitCrud import SplitCRUD
 from retriever.retriever import DocumentSearcher
 from utils.secret_manager import get_secret
 from database_access.embeddingsCrud import EmbeddingsCRUD
+import markdown
 
 # class MyTestCase(unittest.TestCase):
 class SBERT_vs_OpenAI_evaluator():
@@ -50,6 +51,7 @@ class SBERT_vs_OpenAI_evaluator():
         split_openai_wins = 0
         summary_sbert_wins = 0
         summary_openai_wins = 0
+        mismatch_score = 0
 
         for line in lines:
             # create embeddings for the query
@@ -73,36 +75,46 @@ class SBERT_vs_OpenAI_evaluator():
             compare_file = self.format_results_as_html_table(line, sbert_splits, openai_splits)
             # print("----")
             split_winner, split_rationale = self.evaluate_SBERT_vs_OpenAI_results(compare_file)
-            if(split_winner == 'One'):
+            if('One' in split_winner):
                 split_sbert_wins += 1
-            elif(split_winner == 'Two'):
+            elif('Two' in split_winner):
                 split_openai_wins += 1
 
             sbert_summary = self.summarize_splits(sbert_splits, user_query=line)
             openai_summary = self.summarize_splits(openai_splits, user_query=line)
 
             summary_winner, summary_rationale = self.evaluate_summary(sbert_summary,openai_summary,user_query=line)
-            if(summary_winner == 'One'):
+            if( 'One' in summary_winner):
                 summary_sbert_wins += 1
-            elif(summary_winner == 'Two'):
+            elif('Two' in summary_winner):
                 summary_openai_wins += 1
 
             new_compare_file = self.add_summaries_and_evalution_in_html(compare_file,
                                                                         sbert_summary,
                                                         openai_summary, summary_winner, summary_rationale)
 
-            print(f'Split winner: {split_winner} - Summary winner: {summary_winner}')
+            if(summary_winner == split_winner):
+                summary_split_mismatch = False
+                mismach_text = ""
+            else:
+                summary_split_mismatch = True
+                mismach_text = "*** MISMATCH BETWEEN SPLIT AND SUMMARY WINNERS ***"
+                mismatch_score +=1
+
+
+            print(f'Summary winner: {summary_winner} - Split winner: {split_winner}'
+                  f'\nSummary rationale: {summary_rationale}\nSplit rationale: {split_rationale}'
+                )
+            print(f'Split winner: {split_winner} - Summary winner: {summary_winner}\n')
             print("Score so far...")
             print(f'Split SBERT wins: {split_sbert_wins}, Split OpenAI wins:'
                   f' {split_openai_wins}')
             print(f'Summary SBERT wins: {summary_sbert_wins}, Summary OpenAI wins:'
                   f' {summary_openai_wins}')
+            print(f'Summary/Split mismatch score: {mismatch_score}')
+            print("----")
 
 
-    #         TODO: hand these results back to Open Ai to generate an answer and compare
-    #          qualitatively.  Does having more splits create a more accurate answer?  Which has
-    #          better density of information- is the detail equal?  How do we score the density
-    #          of technical information in the answer?
 
     def show_cossimilarityd_scores(self, SBERTList, OpenAIList):
         print("list of SBERT cosine similarity scores:")
@@ -222,8 +234,8 @@ class SBERT_vs_OpenAI_evaluator():
                   "information for use in creating a summary of the topic "
                   "contained in the first header of the HTML document."
                   "For your response, return the winner as either 'One' if the first column is "
-                  "superior or 'Two' if the second column is superior.  Provide the winner "
-                  "as "
+                  "superior or 'Two' if the second column is superior.  Provide your response formatted "
+                  "as the winner on"
                   "the first line with nothing else on it, followed by a detailed "
                   "explanation of your analysis\n"
                   "Here is the HTML document:\n"
@@ -246,17 +258,19 @@ class SBERT_vs_OpenAI_evaluator():
         # Extract the winner and rationale
         winner = response_data.splitlines()[0].strip()
         rationale = "\n".join(response_data.splitlines()[1:])
+        html_rationale = markdown.markdown(rationale)
 
         #Write response_data to html_file for further analysis
         with open(html_file, 'a', encoding='utf-8') as file:
-            file.write(f'\n<br><h2>Slit Evaluation Result:</h2>\n<pre>Winner:{winner}</pre>\n')
-            file.write(f'\n<br>\n<>Rationale:\n{rationale}</p>\n')
+            file.write(f'\n<br><h2>Split Evaluation Result:</h2>'
+                       f'\n<p>Winner:{winner}</p>\n'
+                       f'\n<p>Rationale:</p><p>{html_rationale}</p>\n')
             # file.write('</body>\n</html>\n')
 
         # Print the extracted elements
-        print("Split Evaluation Result:")
-        print(f"Winner: {winner}")
-        print(f"Rationale: {rationale}")
+        # print("Split Evaluation Result:")
+        # print(f"Winner: {winner}")
+        # print(f"Rationale: {rationale}")
         return winner, rationale
 
     def summarize_splits(self, splits_list, user_query) -> str:
@@ -317,25 +331,34 @@ class SBERT_vs_OpenAI_evaluator():
         rationale = "\n".join(response.content.splitlines()[1:])
 
         # Print the extracted elements
-        print("Summary Evaluation Result:")
-        print(f"Winner: {winner}")
-        print(f"Rationale: {rationale}")
+        # print("Summary Evaluation Result:")
+        # print(f"Winner: {winner}")
+        # print(f"Rationale: {rationale}")
         return winner, rationale
 
     def add_summaries_and_evalution_in_html(self, html_file:Path,
                                             sbert_summary:str,
                                             openai_summary:str,
-                                            evaluation:str) -> Path:
+                                            winner:str, rationale:str) -> Path:
         with open(html_file, 'a', encoding='utf-8') as file:
-            file.write("\n<br><h2>Summaries:</h2>")
+            markdown_sbert_summary = markdown.markdown(sbert_summary)
+            markdown_openai_summary = markdown.markdown(openai_summary)
+
+            file.write('\n<br><h2>Summary Generated by LLM from the Splits:</h2>\n')
             file.write('<table border="1">\n')
-            file.write(f'<tr><th width=50%>Algorithm One ({len(sbert_summary)} splits)</th><th '
-                       f'width=50%>Algorithm Two ('
-                       f'{len(openai_summary)} splits</th></tr>\n')
-            file.write(f'<tr><td>{sbert_summary}</td><td>{openai_summary}</td></tr>\n')
+            file.write(f'<tr style="vertical-align: top;">'
+                       f'<th width=50%>Summary from Algorithm One Splits</th>'
+                       f'<th width=50%>Summary from Algorithm Two Splits</th>'
+                       f'</tr>\n')
+            file.write(f'<tr style="vertical-align: top;">'
+                       f'<td>{sbert_summary}</td>'
+                       f'<td>{openai_summary}</td>'
+                       f'</tr>\n')
             file.write('</table>\n')
-            file.write("\n<br><h2>Summary Evaluation:</h2>")
-            file.write(f'\n<br><p>{evaluation}</p>\n')
+            html_rationale = markdown.markdown(rationale)
+            file.write(f"\n<br><h2>Summary Evaluation:</h2>\n"
+                       f'<p>Winner: {winner}</p>\n'
+                       f'<p>Rationale:</p><p>{html_rationale}</p>\n')
             file.write('</body>\n</html>\n')
 
 

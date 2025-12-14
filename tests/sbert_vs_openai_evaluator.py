@@ -8,6 +8,7 @@ import json
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
+from sympy.series.formal import rational_algorithm
 
 from database_access import embeddingsCrud
 import retriever
@@ -45,6 +46,10 @@ class SBERT_vs_OpenAI_evaluator():
         # optional sanity checks
         #self.assertIsInstance(lines, list)
 
+        split_sbert_wins = 0
+        split_openai_wins = 0
+        summary_sbert_wins = 0
+        summary_openai_wins = 0
 
         for line in lines:
             # create embeddings for the query
@@ -67,7 +72,32 @@ class SBERT_vs_OpenAI_evaluator():
 
             compare_file = self.format_results_as_html_table(line, sbert_splits, openai_splits)
             # print("----")
-            self.evaluate_SBERT_vs_OpenAI_results(compare_file)
+            split_winner, split_rationale = self.evaluate_SBERT_vs_OpenAI_results(compare_file)
+            if(split_winner == 'One'):
+                split_sbert_wins += 1
+            elif(split_winner == 'Two'):
+                split_openai_wins += 1
+
+            sbert_summary = self.summarize_splits(sbert_splits, user_query=line)
+            openai_summary = self.summarize_splits(openai_splits, user_query=line)
+
+            summary_winner, summary_rationale = self.evaluate_summary(sbert_summary,openai_summary,user_query=line)
+            if(summary_winner == 'One'):
+                summary_sbert_wins += 1
+            elif(summary_winner == 'Two'):
+                summary_openai_wins += 1
+
+            new_compare_file = self.add_summaries_and_evalution_in_html(compare_file,
+                                                                        sbert_summary,
+                                                        openai_summary, summary_winner, summary_rationale)
+
+            print(f'Split winner: {split_winner} - Summary winner: {summary_winner}')
+            print("Score so far...")
+            print(f'Split SBERT wins: {split_sbert_wins}, Split OpenAI wins:'
+                  f' {split_openai_wins}')
+            print(f'Summary SBERT wins: {summary_sbert_wins}, Summary OpenAI wins:'
+                  f' {summary_openai_wins}')
+
 
     #         TODO: hand these results back to Open Ai to generate an answer and compare
     #          qualitatively.  Does having more splits create a more accurate answer?  Which has
@@ -219,13 +249,100 @@ class SBERT_vs_OpenAI_evaluator():
 
         #Write response_data to html_file for further analysis
         with open(html_file, 'a', encoding='utf-8') as file:
-            file.write(f'\n<br><h2>Evaluation Result:</h2>\n<pre>Winner:{winner}</pre>\n')
-            file.write(f'\n<br>\n<pre>Rationale:\n{rationale}</pre>\n')
-            file.write('</body>\n</html>\n')
+            file.write(f'\n<br><h2>Slit Evaluation Result:</h2>\n<pre>Winner:{winner}</pre>\n')
+            file.write(f'\n<br>\n<>Rationale:\n{rationale}</p>\n')
+            # file.write('</body>\n</html>\n')
+
         # Print the extracted elements
+        print("Split Evaluation Result:")
         print(f"Winner: {winner}")
         print(f"Rationale: {rationale}")
         return winner, rationale
+
+    def summarize_splits(self, splits_list, user_query) -> str:
+        combined_text = "\n".join([split.SplitContent for split in splits_list])
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        llm = init_chat_model("gpt-4o-mini", model_provider="openai")
+
+        prompt = ("Answer this question {user_query} by summarizing the following text fragments "
+                  "into a detailed summary, "
+                  "that highlights the key points and relevant information:\n"
+                  "{combined_text}\n\n")
+
+        # Create a LangChain prompt template
+        prompt_template = PromptTemplate(template=prompt,
+                                         input_variables=["combined_text", "user_query"])
+
+        # Create a LangChain LLMChain
+        sequence = RunnableSequence(prompt_template | llm)
+
+        # Get the response from the LLM
+        response = sequence.invoke({"combined_text": combined_text, "user_query": user_query})
+
+        return response.content
+
+    def evaluate_summary(self, sbert_summary, openai_summary, user_query):
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        llm = init_chat_model("gpt-4o-mini", model_provider="openai")
+
+        prompt = ("Compare the following two summaries that answer the question {user_query}.\n"
+                  "Summary One:\n{sbert_summary}\n\n"
+                  "Summary Two:\n{openai_summary}\n\n"
+                  "Determine which summary provides a more accurate, detailed, and relevant "
+                  "answer to the question. "
+                  "Return 'One' if Summary One is better, 'Two' if Summary Two is better, or "
+                  "'Equal' if they are of equal quality. "
+                  "Also provide a brief explanation of your choice.\n"
+                  "Respond with the winner in the first line of your response with nothing "
+                  "else on it followed by a detailed "
+                  "explanation of your analysis\n"
+                  )
+
+        # Create a LangChain prompt template
+        prompt_template = PromptTemplate(
+            template=prompt,
+            input_variables=["openai_summary", "sbert_summary", "user_query"]
+        )
+
+        # Create a LangChain LLMChain
+        sequence = RunnableSequence(prompt_template | llm)
+
+        # Get the response from the LLM
+        response = sequence.invoke({"sbert_summary": sbert_summary,
+                                    "openai_summary": openai_summary,
+                                    "user_query": user_query})
+
+        # Extract the winner and rationale
+        winner = response.content.splitlines()[0].strip()
+        rationale = "\n".join(response.content.splitlines()[1:])
+
+        # Print the extracted elements
+        print("Summary Evaluation Result:")
+        print(f"Winner: {winner}")
+        print(f"Rationale: {rationale}")
+        return winner, rationale
+
+    def add_summaries_and_evalution_in_html(self, html_file:Path,
+                                            sbert_summary:str,
+                                            openai_summary:str,
+                                            evaluation:str) -> Path:
+        with open(html_file, 'a', encoding='utf-8') as file:
+            file.write("\n<br><h2>Summaries:</h2>")
+            file.write('<table border="1">\n')
+            file.write(f'<tr><th width=50%>Algorithm One ({len(sbert_summary)} splits)</th><th '
+                       f'width=50%>Algorithm Two ('
+                       f'{len(openai_summary)} splits</th></tr>\n')
+            file.write(f'<tr><td>{sbert_summary}</td><td>{openai_summary}</td></tr>\n')
+            file.write('</table>\n')
+            file.write("\n<br><h2>Summary Evaluation:</h2>")
+            file.write(f'\n<br><p>{evaluation}</p>\n')
+            file.write('</body>\n</html>\n')
+
+
+            # file.write(f'\n<br><h2>SBERT Summary:</h2>\n<pre>{sbert_summary}</pre>\n')
+            # file.write(f'\n<br><h2>OpenAI Summary:</h2>\n<pre>{openai_summary}</pre>\n')
+            # file.write(f'\n<br><h2>Summary Evaluation:</h2>\n<pre>{evaluation}</pre>\n')
+        return html_file
 
 if __name__ == '__main__':
     evaluator = SBERT_vs_OpenAI_evaluator()
